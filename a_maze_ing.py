@@ -2,6 +2,7 @@
 
 from typing import List, Dict, Any, Tuple,  Optional, Union
 import sys
+from MazeGenerator import MazeGenerator
 
 
 def main() -> None:
@@ -11,6 +12,9 @@ def main() -> None:
     config: Dict[str, Any] = read_config(sys.argv[1])
     config = convert_values(config)
     print(config)
+    maze = MazeGenerator(config["WIDTH"], config["HEIGHT"])
+    maze.generate_maze()
+    maze.print_maze()
 
 def read_config(filename: str) -> Dict[str, Any]:
     config: Dict[str, Any] = {}
