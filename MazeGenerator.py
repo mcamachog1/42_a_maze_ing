@@ -182,13 +182,13 @@ def print_maze_test_all1(maze: MazeGenerator):
             
             line_n += "---" if cell.north else "   "
             line_n += "+"
-            if x == 0 and y != 0:
-                line_w += "|" if cell.west else " "
-                print(line_w, end="")           
+            if x == 0:
+                line_e += "|   " if cell.west else "   "
+            else:
+                line_e += "   "
+            line_e += "|" if cell.east else " "                
             line_s += "---" if cell.south else "   "
             line_s += "+"
-            line_e += "   "
-            line_e += "|" if cell.east else " "
         if y == 0:
             print(line_n)           
         print(line_e)
