@@ -3,6 +3,7 @@
 from typing import List, Dict, Any, Tuple,  Optional, Union
 import sys
 from MazeGenerator import MazeGenerator
+from ft_maze_print import read_maze
 
 
 def main() -> None:
@@ -14,7 +15,11 @@ def main() -> None:
     print(config)
     maze = MazeGenerator(config["WIDTH"], config["HEIGHT"])
     maze.generate_maze()
-    maze.print_maze()
+    maze.print_maze_ascii()
+    print()
+    maze.create_maze_file(config["OUTPUT_FILE"])
+    new_maze: MazeGenerator = read_maze(config["OUTPUT_FILE"])
+    new_maze.print_maze_ascii()
 
 def read_config(filename: str) -> Dict[str, Any]:
     config: Dict[str, Any] = {}

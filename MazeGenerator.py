@@ -39,6 +39,23 @@ class MazeGenerator:
                 print(cell.get_hexa(), end="")
             print()
 
+    def format_maze(self) -> str:
+        output: str = ""
+        for line in self.grid:
+            for cell in line:
+                output += cell.get_hexa()
+            output += "\n"
+        return output            
+
+    def create_maze_file(self, filename: str) -> None:
+        try:
+            with open(filename, "w") as file:
+                file.write(self.format_maze())
+        except Exception as error:
+            print("Error:", error)
+
+
+
     @staticmethod
     def remove_wall(current: Cell, neighbor: Cell):
         dx = neighbor.x - current.x
@@ -89,110 +106,28 @@ class MazeGenerator:
                 stack.pop() 
 
 
-
-def print_maze_test_NW(maze: MazeGenerator):
-    height = maze.height
-    width = maze.width
-
-    # topo
-    #print("+" + "---+" * width)
-
-    for y in range(height):
-        line_n = "+"
-        line_w = ""
-        for x in range(width):
-            cell = maze.grid[y][x]
-
-            # espaço da célula
-            line_n += "---" if cell.north else "   "
-            line_n += "+"
-            line_w += "|" if cell.west else " "
-            line_w += "   "
-        print(line_n)
-        print(line_w)       
-
-def print_maze_test_SE(maze: MazeGenerator):
-    height = maze.height
-    width = maze.width
-
-    # topo
-    #print("+" + "---+" * width)
-
-    for y in range(height):
-        line_s = "+"
-        line_e = " "
-        for x in range(width):
-            cell = maze.grid[y][x]
-
-            # espaço da célula
-            line_s += "---" if cell.south else "   "
-            line_s += "+"
-            line_e += "   "
-            line_e += "|" if cell.east else " "
-            
-        print(line_e)
-        print(line_s)
-
-def print_maze_test_all(maze: MazeGenerator):
-    height = maze.height
-    width = maze.width
-
-    # topo
-    #print("+" + "---+" * width)
-
-    for y in range(height):
-        line_n = "+"
-        line_w = ""
-        line_s = "+"
-        line_e = " "
-        for x in range(width):
-            cell = maze.grid[y][x]
-
-            # espaço da célula
-            line_n += "---" if cell.north else "   "
-            line_n += "+"
-            line_w += "|" if cell.west else " "
-            line_w += "   "            
-            line_s += "---" if cell.south else "   "
-            line_s += "+"
-            line_e += "   "
-            line_e += "|" if cell.east else " "
-
-        print(line_n)
-        print(line_w)            
-        print(line_e)
-        print(line_s)
-
-def print_maze_test_all1(maze: MazeGenerator):
-    height = maze.height
-    width = maze.width
-
-    # topo
-    #print("+" + "---+" * width)
-
-    for y in range(height):
-        line_n = "+"
-        line_w = ""
-        line_s = "+"
-        line_e = ""
-        for x in range(width):
-            cell = maze.grid[y][x]
-
-            # espaço da célula
-            
-            line_n += "---" if cell.north else "   "
-            line_n += "+"
-            if x == 0:
-                line_e += "|   " if cell.west else "   "
-            else:
-                line_e += "   "
-            line_e += "|" if cell.east else " "                
-            line_s += "---" if cell.south else "   "
-            line_s += "+"
-        if y == 0:
-            print(line_n)           
-        print(line_e)
-        print(line_s)
+    def print_maze_ascii(self):
+        height = self.height
+        width = self.width
+        for y in range(height):
+            line_n = "+"
+            line_s = "+"
+            line_e = ""
+            for x in range(width):
+                cell = self.grid[y][x]
+                line_n += "---" if cell.north else "   "
+                line_n += "+"
+                if x == 0:
+                    line_e += "|   " if cell.west else "   "
+                else:
+                    line_e += "   "
+                line_e += "|" if cell.east else " "                
+                line_s += "---" if cell.south else "   "
+                line_s += "+"
+            if y == 0:
+                print(line_n)           
+            print(line_e)
+            print(line_s)
 
 
 def main() -> None:
@@ -201,15 +136,7 @@ def main() -> None:
     grid.print_maze()
     
 
-    print_maze_test_NW(grid)
-    print()
-    print("------------------------------------")
-    print()
-    print_maze_test_SE(grid)
-    print()
-    print("------------------------------------")
-    print()
-    print_maze_test_all1(grid)
+    grid.print_maze_ascii()
 
 if __name__ == "__main__":
     main()
