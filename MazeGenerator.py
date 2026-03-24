@@ -12,6 +12,7 @@ class Cell:
         self.x = x
         self.y = y
         self.visited = False
+        self.first_solution = False
 
     def get_hexa(self) -> str:
         n: int = int(self.north)
@@ -20,8 +21,6 @@ class Cell:
         w: int = int(self.west)
         number: int = w * 8 + s * 4 + e * 2 + n
         return format(number, "X")
-
-
 
 
 class MazeGenerator:
@@ -53,8 +52,6 @@ class MazeGenerator:
                 file.write(self.format_maze())
         except Exception as error:
             print("Error:", error)
-
-
 
     @staticmethod
     def remove_wall(current: Cell, neighbor: Cell):
@@ -105,8 +102,57 @@ class MazeGenerator:
             else:
                 stack.pop() 
 
+    def find_first_solution(self, start_x, start_y, exit_x, exit_y) -> List[Tuple]:
+        stack = []
+        current = self.grid[start_y][start_x]
+        current.first_solution = True
 
-    def print_maze_ascii(self):
+        stack.append((start_x, start_y))
+
+        while stack:
+            x, y = stack[-1]
+            current = self.grid[y][x]
+            self.grid[y][x].first_solution = True
+            if x == exit_x and y == exit_y:
+                break
+
+            # find neighbors without visit and without wall
+            neighbors = []
+            if not current.north and not self.grid[y-1][x].first_solution:
+                neighbors.append((x, y - 1))
+            if not current.south and not self.grid[y+1][x].first_solution:
+                neighbors.append((x, y + 1))                
+            if not current.east and not self.grid[y][x+1].first_solution:
+                neighbors.append((x + 1, y))
+            if not current.west and not self.grid[y][x-1].first_solution:
+                neighbors.append((x - 1, y))                
+
+            if neighbors:
+                nx, ny = random.choice(neighbors)
+                neighbor = self.grid[ny][nx]
+                neighbor.first_solution = True
+                stack.append((nx, ny))
+            else:
+                stack.pop()
+        return stack
+
+    def print_maze_ascii(self, stack: List[Tuple]):
+
+        def in_stack(cell: Cell, stack: List[Tuple]) -> str:
+            coord: Tuple = (cell.x, cell.y)
+            if len(stack) == 0:
+                return "   "
+            coord_entry: Tuple = stack[0]
+            coord_exit: Tuple = stack[len(stack) - 1]
+            if coord == coord_entry:
+                return " B "
+            if coord == coord_exit:
+                return " E " 
+            if coord in stack:
+                return " * "
+            else:
+                return "   "
+        
         height = self.height
         width = self.width
         for y in range(height):
@@ -115,12 +161,12 @@ class MazeGenerator:
             line_e = ""
             for x in range(width):
                 cell = self.grid[y][x]
-                line_n += "---" if cell.north else "   "
+                line_n += "---" if cell.north else in_stack(cell, stack)
                 line_n += "+"
                 if x == 0:
-                    line_e += "|   " if cell.west else "   "
+                    line_e += "|" + in_stack(cell, stack) if cell.west else in_stack(cell, stack)
                 else:
-                    line_e += "   "
+                    line_e += in_stack(cell, stack)
                 line_e += "|" if cell.east else " "                
                 line_s += "---" if cell.south else "   "
                 line_s += "+"
@@ -130,13 +176,12 @@ class MazeGenerator:
             print(line_s)
 
 
-def main() -> None:
-    grid: MazeGenerator = MazeGenerator(5, 5)
-    grid.generate_maze()
-    grid.print_maze()
+# def main() -> None:
+#     grid: MazeGenerator = MazeGenerator(5, 5)
+#     grid.generate_maze()
+#     grid.print_maze()
     
+#     grid.print_maze_ascii()
 
-    grid.print_maze_ascii()
-
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

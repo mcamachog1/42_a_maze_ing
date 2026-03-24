@@ -12,14 +12,19 @@ def main() -> None:
         sys.exit()
     config: Dict[str, Any] = read_config(sys.argv[1])
     config = convert_values(config)
-    print(config)
     maze = MazeGenerator(config["WIDTH"], config["HEIGHT"])
     maze.generate_maze()
-    maze.print_maze_ascii()
-    print()
-    maze.create_maze_file(config["OUTPUT_FILE"])
-    new_maze: MazeGenerator = read_maze(config["OUTPUT_FILE"])
-    new_maze.print_maze_ascii()
+    # maze.print_maze()
+    stack = []
+    # maze = read_maze("maze.txt")
+    # maze.print_maze_ascii(stack)
+    start_x, start_y = config["ENTRY"]
+    exit_x, exit_y = config["EXIT"]
+    stack = maze.find_first_solution(start_x, start_y, exit_x, exit_y)
+    # print(stack)
+    maze.print_maze_ascii(stack)
+
+
 
 def read_config(filename: str) -> Dict[str, Any]:
     config: Dict[str, Any] = {}
@@ -64,6 +69,7 @@ def read_config(filename: str) -> Dict[str, Any]:
         sys.exit()
     return config
 
+
 def parse_output_file(output_file: str) -> bool:
     name: str
     type: str
@@ -72,6 +78,7 @@ def parse_output_file(output_file: str) -> bool:
     name, type = output_file.split(".")
 
     return type.lower() == "txt"
+
 
 def convert_values(config: Dict[str, Any]) -> Dict[str, Any]:
     #transformar width em int
