@@ -12,6 +12,7 @@ class Cell:
         self.y = y
         self.visited = False
         self.first_solution = False
+        self.second_solution = False
 
     def get_hexa(self) -> str:
         n: int = int(self.north)
@@ -102,7 +103,42 @@ class MazeGenerator:
                 neighbor.visited = True
                 stack.append((nx, ny))
             else:
-                stack.pop() 
+                stack.pop()
+
+    def break_north_and_south(self, rows_to_break: List[int], columns_to_break: List[int]) -> None:
+        for y in rows_to_break:
+            for x in range(self.width):
+                current = self.grid[y][x]
+                # if y > 0 and self.grid[y-1][x].first_solution and current.north and current.first_solution and self.grid[y-1][x].south:
+                #     self.remove_wall(current, self.grid[y-1][x])
+                # if y < self.height - 1 and self.grid[y + 1][x].first_solution and current.south and current.first_solution and self.grid[y+1][x].north:
+                #     self.remove_wall(current, self.grid[y + 1][x])
+                print(f"x={x} y={y}")
+                print(f"neig first_solution: {self.grid[y][x-1].first_solution}")
+                print(f"current west: {current.west}")
+                print(f"current first sol: {current.first_solution}")
+                print(f"neig east: {self.grid[y][x - 1].east}")
+                print()
+                if x > 0 and self.grid[y][x-1].first_solution and current.west and current.first_solution and self.grid[y][x - 1].east:
+                    current.west = False
+                    self.grid[y][x-1].east = False
+                # if x < self.width - 1 and self.grid[y][x+1].first_solution and current.east and current.first_solution and self.grid[y][x+1].west:
+                #     current.east = False
+                #     self.grid[y][x + 1].west = False
+        # for x in columns_to_break:
+        #     for y in range(self.height):
+        #         current = self.grid[y][x]
+        #         if y > 0 and self.grid[y-1][x].first_solution and current.north and current.first_solution and self.grid[y-1][x].south:
+        #             current.north = False
+        #             self.grid[y-1][x].south = False
+        #         if y < self.height - 1 and self.grid[y + 1][x].first_solution and current.south and current.first_solution and self.grid[y+1][x].north:
+        #             current.south = False
+        #             self.grid[y + 1][x].north = False
+                # if x > 0 and self.grid[y][x-1].first_solution and current.west and current.first_solution and self.grid[y][x - 1].east:
+                #     self.remove_wall(current, self.grid[y][x - 1])
+                # if x < self.width - 1 and self.grid[y][x+1].first_solution and current.east and current.first_solution and self.grid[y][x+1].west:
+                #     self.remove_wall(current, self.grid[y][x + 1])
+
 
     def find_first_solution(self, start_x, start_y, exit_x, exit_y) -> List[Tuple]:
         stack = []
@@ -133,6 +169,40 @@ class MazeGenerator:
                 nx, ny = random.choice(neighbors)
                 neighbor = self.grid[ny][nx]
                 neighbor.first_solution = True
+                stack.append((nx, ny))
+            else:
+                stack.pop()
+        return stack
+
+    def find_second_solution(self, start_x, start_y, exit_x, exit_y) -> List[Tuple]:
+        stack = []
+        current = self.grid[start_y][start_x]
+        current.second_solution = True
+
+        stack.append((start_x, start_y))
+
+        while stack:
+            x, y = stack[-1]
+            current = self.grid[y][x]
+            self.grid[y][x].second_solution = True
+            if x == exit_x and y == exit_y:
+                break
+
+            # find neighbors without visit and without wall
+            neighbors = []
+            if not current.north and not self.grid[y-1][x].second_solution:
+                neighbors.append((x, y - 1))
+            if not current.south and not self.grid[y+1][x].second_solution:
+                neighbors.append((x, y + 1))                
+            if not current.east and not self.grid[y][x+1].second_solution:
+                neighbors.append((x + 1, y))
+            if not current.west and not self.grid[y][x-1].second_solution:
+                neighbors.append((x - 1, y))                
+
+            if neighbors:
+                nx, ny = random.choice(neighbors)
+                neighbor = self.grid[ny][nx]
+                neighbor.second_solution = True
                 stack.append((nx, ny))
             else:
                 stack.pop()
@@ -178,14 +248,37 @@ class MazeGenerator:
             print(line_s)
 
     def update_maze(self):
-        # select rows to open
-        row1: List[Tuple] = []
-        # row 1
-        row1 = self.grid[6]
+        # # select rows to open
+        # row1: List[Tuple] = []
+        # # row 1
+        # row1 = self.grid[6]
+        # count_south_closed: int = 0
+        # for cell in row1:
+        #     print(f"({cell.x},{cell.y})")
+        #     if cell.south:
+        #         count_south_closed += 1
+        # south_percentage_closed = count_south_closed/self.width
+        # print(f"% south closed: {south_percentage_closed}")
+        column_to_break: List[int] = []
+        count_east_closed: int = 0
+        for x in range(self.width - 1):
+            for y in range(self.height):
+                if self.grid[y][x].east:
+                    count_east_closed += 1
+            east_percentage_closed = count_east_closed/self.height
+            if east_percentage_closed >= 0.50:
+                column_to_break.append(x)
+            count_east_closed = 0
+
+        row_to_break: List[int] = []
         count_south_closed: int = 0
-        for cell in row1:
-            print(f"({cell.x},{cell.y})")
-            if cell.south:
-                count_south_closed += 1
-        south_percentage_closed = count_south_closed/self.width
-        print(f"% south closed: {south_percentage_closed}")
+        for y in range(self.height - 1):
+            for x in range(self.width):
+                if self.grid[y][x].south:
+                    count_south_closed += 1
+            south_percentage_closed = count_south_closed/self.width
+            if south_percentage_closed >= 0.50:
+                row_to_break.append(y)
+            count_south_closed = 0
+        print(f"column to break: {column_to_break} rows to break: {row_to_break}")
+        self.break_north_and_south(row_to_break, column_to_break)        

@@ -14,14 +14,18 @@ def main() -> None:
     convert_config_values(config)
     # maze = MazeGenerator(config)
     # maze.generate_maze()
-    # maze.create_output_file(config["OUTPUT_FILE"])
+    # maze.create_output_hexa_file(config["OUTPUT_FILE"])
     stack = []
+    stack2 = []
     new_maze = read_maze_from_file(config["OUTPUT_FILE"])
     start_x, start_y = config["ENTRY"]
     exit_x, exit_y = config["EXIT"]
     stack = new_maze.find_first_solution(start_x, start_y, exit_x, exit_y)
     new_maze.print_maze_ascii(stack)
     new_maze.update_maze()
+    stack2 = new_maze.find_second_solution(start_x, start_y, exit_x, exit_y)
+    new_maze.print_maze_ascii(stack2)
+
 
 
 def read_config_file(filename: str) -> Dict[str, Any]:
