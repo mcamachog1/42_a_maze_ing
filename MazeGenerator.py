@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import random
 from typing import List, Dict, Any, Tuple,  Optional, Union
 
@@ -24,21 +23,23 @@ class Cell:
 
 
 class MazeGenerator:
-    def __init__(self, width, height):
+    def __init__(self, width: int, height: int, seed: Optional[int] = None):
         self.width = width
         self.height = height
         self.grid = [
             [Cell(x, y) for x in range(width)]
             for y in range(height)
         ]
+        if seed is not None:
+            random.seed(seed)
 
-    def print_maze(self) -> None:
+    def print_maze_hexa(self) -> None:
         for line in self.grid:
             for cell in line:
                 print(cell.get_hexa(), end="")
             print()
 
-    def format_maze(self) -> str:
+    def format_output_file(self) -> str:
         output: str = ""
         for line in self.grid:
             for cell in line:
@@ -46,10 +47,10 @@ class MazeGenerator:
             output += "\n"
         return output            
 
-    def create_maze_file(self, filename: str) -> None:
+    def create_output_file(self, filename: str) -> None:
         try:
             with open(filename, "w") as file:
-                file.write(self.format_maze())
+                file.write(self.format_output_file())
         except Exception as error:
             print("Error:", error)
 
@@ -174,14 +175,3 @@ class MazeGenerator:
                 print(line_n)           
             print(line_e)
             print(line_s)
-
-
-# def main() -> None:
-#     grid: MazeGenerator = MazeGenerator(5, 5)
-#     grid.generate_maze()
-#     grid.print_maze()
-    
-#     grid.print_maze_ascii()
-
-# if __name__ == "__main__":
-#     main()

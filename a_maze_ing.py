@@ -14,15 +14,13 @@ def main() -> None:
     config = convert_values(config)
     maze = MazeGenerator(config["WIDTH"], config["HEIGHT"])
     maze.generate_maze()
-    # maze.print_maze()
+    maze.create_output_file(config["OUTPUT_FILE"])
     stack = []
-    # maze = read_maze("maze.txt")
-    # maze.print_maze_ascii(stack)
+    new_maze = read_maze(config["OUTPUT_FILE"])
     start_x, start_y = config["ENTRY"]
     exit_x, exit_y = config["EXIT"]
-    stack = maze.find_first_solution(start_x, start_y, exit_x, exit_y)
-    # print(stack)
-    maze.print_maze_ascii(stack)
+    stack = new_maze.find_first_solution(start_x, start_y, exit_x, exit_y)
+    new_maze.print_maze_ascii(stack)
 
 
 
