@@ -281,4 +281,78 @@ class MazeGenerator:
                 row_to_break.append(y)
             count_south_closed = 0
         print(f"column to break: {column_to_break} rows to break: {row_to_break}")
-        self.break_north_and_south(row_to_break, column_to_break)        
+        self.break_north_and_south(row_to_break, column_to_break)
+
+    def make_imperfect(self) -> None:
+        for _ in range(5):
+            while True:
+                x = random.randint(0, self.width - 1)
+                y = random.randint(0, self.height - 1)
+                
+                neighbors = [
+                    (nx, ny)
+                    for nx, ny in [
+                        (x, y-1),
+                        (x, y+1),
+                        (x-1, y),
+                        (x+1, y),
+                    ]
+                    if 0 <= nx < self.width and 0 <= ny < self.height
+                ]
+
+                if not neighbors:
+                    continue
+
+                nx, ny = random.choice(neighbors)
+                current = self.grid[y][x]
+                neighbor = self.grid[ny][nx]
+
+                dx = nx - x
+                dy = ny - y
+
+                if dx == 1 and current.east:
+                    self.remove_wall(current, neighbor)
+                    break
+                elif dx == -1 and current.west:
+                    self.remove_wall(current, neighbor)
+                    break
+                elif dy == 1 and current.south:
+                    self.remove_wall(current, neighbor)
+                    break
+                elif dy == -1 and current.north:
+                    self.remove_wall(current, neighbor)
+                    break
+            print(f"x={x}, y={y}, nx={nx}, ny={ny}")
+
+    def new_path(self, solution_path):
+        while True:
+            if len(solution_path) < 3:
+                return
+
+            # escolhe dois pontos distantes no caminho
+            (x1, y1) = random.choice(solution_path)
+            (x2, y2) = random.choice(solution_path)
+
+            # evitar escolher o mesmo ou vizinhos diretos
+
+            current = self.grid[y1][x1]
+            neighbor = self.grid[y2][x2]
+
+
+            dx = x2 - x1
+            dy = y2 - y1
+
+            if dx == 1 and current.east:
+                self.remove_wall(current, neighbor)
+                return
+            elif dx == -1 and current.west:
+                self.remove_wall(current, neighbor)
+                return
+            elif dy == 1 and current.south:
+                self.remove_wall(current, neighbor)
+                return
+            elif dy == -1 and current.north:
+                self.remove_wall(current, neighbor)
+                return           
+
+            

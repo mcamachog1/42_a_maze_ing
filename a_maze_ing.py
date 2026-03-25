@@ -22,7 +22,8 @@ def main() -> None:
     exit_x, exit_y = config["EXIT"]
     stack = new_maze.find_first_solution(start_x, start_y, exit_x, exit_y)
     new_maze.print_maze_ascii(stack)
-    new_maze.update_maze()
+    print(stack)
+    new_maze.make_imperfect()
     stack2 = new_maze.find_second_solution(start_x, start_y, exit_x, exit_y)
     new_maze.print_maze_ascii(stack2)
 
