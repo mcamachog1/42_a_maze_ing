@@ -1,12 +1,9 @@
-#!/usr/bin/env python3
-
-
 from MazeGenerator import (
     MazeGenerator
 )
 
 
-def read_maze(filename: str) -> MazeGenerator:
+def read_maze_from_file(filename: str) -> MazeGenerator:
     height: int = 0
     # Read the file to get height and width
     try:
@@ -17,7 +14,8 @@ def read_maze(filename: str) -> MazeGenerator:
             width: int = len(line)
     except Exception as e:
         print(f"{e}")
-    maze: MazeGenerator = MazeGenerator(width, height)
+    base_config: Dict[str, Any] = {"WIDTH": width, "HEIGHT": height}
+    maze: MazeGenerator = MazeGenerator(base_config)
 
     bits: str = "0000"
     # Read the file to set the cells of the grid
@@ -36,13 +34,3 @@ def read_maze(filename: str) -> MazeGenerator:
         print(f"{e}")
 
     return maze
-
-
-#def main() -> None:
-    #filename: str = "maze.txt"
-
-    #print_maze_ascii(read_maze(filename))
-
-
-#if __name__ == "__main__":
-    #main()

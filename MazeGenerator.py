@@ -40,7 +40,7 @@ class MazeGenerator:
                 print(cell.get_hexa(), end="")
             print()
 
-    def format_output_file(self) -> str:
+    def format_output_hexa_file(self) -> str:
         output: str = ""
         for line in self.grid:
             for cell in line:
@@ -48,10 +48,10 @@ class MazeGenerator:
             output += "\n"
         return output            
 
-    def create_output_file(self, filename: str) -> None:
+    def create_output_hexa_file(self, filename: str) -> None:
         try:
             with open(filename, "w") as file:
-                file.write(self.format_output_file())
+                file.write(self.format_output_hexa_file())
         except Exception as error:
             print("Error:", error)
 
@@ -176,3 +176,16 @@ class MazeGenerator:
                 print(line_n)           
             print(line_e)
             print(line_s)
+
+    def update_maze(self):
+        # select rows to open
+        row1: List[Tuple] = []
+        # row 1
+        row1 = self.grid[6]
+        count_south_closed: int = 0
+        for cell in row1:
+            print(f"({cell.x},{cell.y})")
+            if cell.south:
+                count_south_closed += 1
+        south_percentage_closed = count_south_closed/self.width
+        print(f"% south closed: {south_percentage_closed}")

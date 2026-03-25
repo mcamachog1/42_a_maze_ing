@@ -3,30 +3,28 @@
 from typing import List, Dict, Any, Tuple,  Optional, Union
 import sys
 from MazeGenerator import MazeGenerator
-from ft_maze_print import read_maze
+from load_maze import read_maze_from_file
 
 
 def main() -> None:
     if len(sys.argv) != 2:
         print("Usage:  python3 a_maze_ing.py <config.txt>")
         sys.exit()
-    config: Dict[str, Any] = read_config(sys.argv[1])
-    print(config)
-    convert_values(config)
-    print(config)
-    maze = MazeGenerator(config)
-    maze.generate_maze()
-    maze.create_output_file(config["OUTPUT_FILE"])
+    config: Dict[str, Any] = read_config_file(sys.argv[1])
+    convert_config_values(config)
+    # maze = MazeGenerator(config)
+    # maze.generate_maze()
+    # maze.create_output_file(config["OUTPUT_FILE"])
     stack = []
-    new_maze = read_maze(config)
+    new_maze = read_maze_from_file(config["OUTPUT_FILE"])
     start_x, start_y = config["ENTRY"]
     exit_x, exit_y = config["EXIT"]
     stack = new_maze.find_first_solution(start_x, start_y, exit_x, exit_y)
     new_maze.print_maze_ascii(stack)
+    new_maze.update_maze()
 
 
-
-def read_config(filename: str) -> Dict[str, Any]:
+def read_config_file(filename: str) -> Dict[str, Any]:
     config: Dict[str, Any] = {}
     try:
         mandatory_keys: List[str] = [
@@ -37,12 +35,8 @@ def read_config(filename: str) -> Dict[str, Any]:
             "OUTPUT_FILE",
             "PERFECT"
             ]
-        print(mandatory_keys)
         all_keys: List[str] = list(mandatory_keys)
-                                   
         all_keys.extend(["SEED", "ALGORITHM", "DISPLAY_MODE"])
-        print(mandatory_keys)
-        print(all_keys)
 
         with open(filename) as file:
             for line in file:
@@ -74,7 +68,7 @@ def read_config(filename: str) -> Dict[str, Any]:
     return config
 
 
-def parse_output_file(output_file: str) -> bool:
+def is_format_output_file_name(output_file: str) -> bool:
     name: str
     type: str
     if output_file.count(".") != 1:
@@ -84,7 +78,7 @@ def parse_output_file(output_file: str) -> bool:
     return type.lower() == "txt"
 
 
-def convert_values(config: Dict[str, Any]) -> None:
+def convert_config_values(config: Dict[str, Any]) -> None:
     #transformar width em int
     try:
         x: int
@@ -110,7 +104,7 @@ def convert_values(config: Dict[str, Any]) -> None:
         if config["PERFECT"].lower() not in ["true", "false"]:
             raise ValueError("'PERFECT' must be 'True' or 'False'")
         config["PERFECT"] = config["PERFECT"].lower() == "true"
-        if not parse_output_file(config["OUTPUT_FILE"]):
+        if not is_format_output_file_name(config["OUTPUT_FILE"]):
             raise ValueError("'OUTPUT_FILE' must be '.txt' file")
         config["OUTPUT_FILE"] = config["OUTPUT_FILE"].lower()
     except ValueError as error:
