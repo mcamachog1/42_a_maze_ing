@@ -23,13 +23,14 @@ class Cell:
 
 
 class MazeGenerator:
-    def __init__(self, width: int, height: int, seed: Optional[int] = None):
-        self.width = width
-        self.height = height
+    def __init__(self, config: Dict[str, Any]):
+        self.width = config["WIDTH"]
+        self.height = config["HEIGHT"]
         self.grid = [
-            [Cell(x, y) for x in range(width)]
-            for y in range(height)
+            [Cell(x, y) for x in range(self.width)]
+            for y in range(self.height)
         ]
+        seed = config.get("SEED", None)
         if seed is not None:
             random.seed(seed)
 

@@ -11,12 +11,14 @@ def main() -> None:
         print("Usage:  python3 a_maze_ing.py <config.txt>")
         sys.exit()
     config: Dict[str, Any] = read_config(sys.argv[1])
-    config = convert_values(config)
-    maze = MazeGenerator(config["WIDTH"], config["HEIGHT"])
+    print(config)
+    convert_values(config)
+    print(config)
+    maze = MazeGenerator(config)
     maze.generate_maze()
     maze.create_output_file(config["OUTPUT_FILE"])
     stack = []
-    new_maze = read_maze(config["OUTPUT_FILE"])
+    new_maze = read_maze(config)
     start_x, start_y = config["ENTRY"]
     exit_x, exit_y = config["EXIT"]
     stack = new_maze.find_first_solution(start_x, start_y, exit_x, exit_y)
@@ -35,8 +37,12 @@ def read_config(filename: str) -> Dict[str, Any]:
             "OUTPUT_FILE",
             "PERFECT"
             ]
-        all_keys: List[str] = mandatory_keys
+        print(mandatory_keys)
+        all_keys: List[str] = list(mandatory_keys)
+                                   
         all_keys.extend(["SEED", "ALGORITHM", "DISPLAY_MODE"])
+        print(mandatory_keys)
+        print(all_keys)
 
         with open(filename) as file:
             for line in file:
@@ -78,42 +84,35 @@ def parse_output_file(output_file: str) -> bool:
     return type.lower() == "txt"
 
 
-def convert_values(config: Dict[str, Any]) -> Dict[str, Any]:
+def convert_values(config: Dict[str, Any]) -> None:
     #transformar width em int
     try:
         x: int
         y: int
         w: int
         z: int
-        width: int = int(config["WIDTH"])
-        height: int = int(config["HEIGHT"])
-        if width < 0 or height < 0:
+        config["WIDTH"] = int(config["WIDTH"])
+        config["HEIGHT"] = int(config["HEIGHT"])
+        if config["WIDTH"] < 0 or config["HEIGHT"] < 0:
             raise ValueError("Width and Height must be positive")
         if "," not in config["ENTRY"] or "," not in config["EXIT"]:
             raise ValueError("'ENTRY' and 'EXIT' must have only two values separated by ','")
         x, y = config["ENTRY"].split(",")
-        entry: tuple = int(x), int(y)
+        config["ENTRY"] = int(x), int(y)
         w, z = config["EXIT"].split(",")
-        exit: tuple = int(w), int(z)
-        if not (0 <= entry[0] < width and 0 <= entry[1] < height):
+        config["EXIT"] = int(w), int(z)
+        if not (0 <= config["ENTRY"][0] < config["WIDTH"] and 0 <= config["ENTRY"][1] < config["HEIGHT"]):
             raise ValueError("ENTRY outside maze")
-        if not (0 <= exit[0] < width and 0 <= exit[1] < height):
+        if not (0 <= config["EXIT"][0] < config["WIDTH"] and 0 <= config["EXIT"][1] < config["HEIGHT"]):
             raise ValueError("EXIT outside maze")
-        if entry == exit:
+        if config["ENTRY"] == config["EXIT"]:
             raise ValueError("ENTRY and EXIT must be different")
         if config["PERFECT"].lower() not in ["true", "false"]:
             raise ValueError("'PERFECT' must be 'True' or 'False'")
-        perfect = config["PERFECT"].lower() == "true"
+        config["PERFECT"] = config["PERFECT"].lower() == "true"
         if not parse_output_file(config["OUTPUT_FILE"]):
             raise ValueError("'OUTPUT_FILE' must be '.txt' file")
-        return {
-            "WIDTH": width,
-            "HEIGHT": height,
-            "ENTRY": entry,
-            "EXIT": exit,
-            "OUTPUT_FILE": config["OUTPUT_FILE"].lower(),
-            "PERFECT": perfect
-        }
+        config["OUTPUT_FILE"] = config["OUTPUT_FILE"].lower()
     except ValueError as error:
         value = error.args[0].split(":")[-1].strip()
         print(f"Invalid value: {value}")
