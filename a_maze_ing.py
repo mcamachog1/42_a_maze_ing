@@ -12,40 +12,56 @@ def main() -> None:
         sys.exit()
     config: Dict[str, Any] = read_config_file(sys.argv[1])
     convert_config_values(config)
-    # maze = MazeGenerator(config)
-    # maze.generate_maze()
-    # maze.create_output_hexa_file(config["OUTPUT_FILE"])
+    maze = MazeGenerator(config)
+    maze.make_42()
+    begin_x, begin_y = config["ENTRY"]
+    exit_x, exit_y = config["EXIT"]
+    print(f"Begin = {maze.grid[begin_y][begin_x].is_42}")
+    print(f"Exit = {maze.grid[exit_y][exit_x].is_42}")
+    if maze.grid[begin_y][begin_x].is_42 or maze.grid[exit_y][exit_x].is_42:
+        print("Entry or Exit are invalid cells, position belongs to 42")
+        exit()
+    maze.generate_maze()
+    maze.print_maze_ascii()
+
+    
+    maze.count()
+    maze.print_maze_ascii()
+    maze.create_output_hexa_file(config["OUTPUT_FILE"])
     path_1 = []
     path_2 = []
 
     # Load maze
-    new_maze = read_maze_from_file(config["OUTPUT_FILE"])
+    # new_maze = read_maze_from_file(config["OUTPUT_FILE"])
 
     start_x, start_y = config["ENTRY"]
     exit_x, exit_y = config["EXIT"]
 
+    # maze.print_maze_ascii([(0,0), (1, 1)])
     # Get 1st solution
-    path_1 = new_maze.find_first_solution(start_x, start_y, exit_x, exit_y)
-
+    path_1 = maze.find_first_solution(start_x, start_y, exit_x, exit_y)
+    
     # If PERFECT is False make imperfect
     if not config["PERFECT"]:
-        new_maze.make_imperfect(path_1)
+        maze.make_imperfect(path_1)
         print("This maze IS NOT PERFECT")
+    else:
+        print("This maze IS PERFECT")
 
     # Print maze with 1st solution
     print("Try 1st path:")
-    new_maze.print_maze_ascii(path_1)
+    maze.print_maze_ascii(path_1)
 
     # If maze is imperfect get 2nd solution
     if not config["PERFECT"]:
-        path_2 = new_maze.find_second_solution(start_x, start_y, exit_x, exit_y)
+        path_2 = maze.find_second_solution(start_x, start_y, exit_x, exit_y)
         print("Try 2nd path:")
-        new_maze.print_maze_ascii(path_2)
+        maze.print_maze_ascii(path_2)
     
     # Get de best path (shorter one)
     print(f"One of the shortest path is:\n")
-    path = new_maze.find_best_path(config["ENTRY"], config["EXIT"])
-    new_maze.print_maze_ascii(path)
+    path = maze.find_best_path(config["ENTRY"], config["EXIT"])
+    maze.print_maze_ascii(path)
 
 
 
@@ -114,6 +130,8 @@ def convert_config_values(config: Dict[str, Any]) -> None:
         config["HEIGHT"] = int(config["HEIGHT"])
         if config["WIDTH"] < 0 or config["HEIGHT"] < 0:
             raise ValueError("Width and Height must be positive")
+        if config["WIDTH"] < 9 or config["HEIGHT"] < 7:
+            raise ValueError("Width must be at least 9 and Height must be at least 7")        
         if "," not in config["ENTRY"] or "," not in config["EXIT"]:
             raise ValueError("'ENTRY' and 'EXIT' must have only two values separated by ','")
         x, y = config["ENTRY"].split(",")

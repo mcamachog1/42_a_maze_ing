@@ -15,6 +15,7 @@ class Cell:
         self.first_solution = False
         self.second_solution = False
         self.best_path = False
+        self.is_42 = False
 
     def get_hexa(self) -> str:
         n: int = int(self.north)
@@ -31,6 +32,8 @@ class MazeGenerator:
     def __init__(self, config: Dict[str, Any]):
         self.width = config["WIDTH"]
         self.height = config["HEIGHT"]
+        self.entry = config["ENTRY"]
+        self.exit = config["EXIT"]
         self.grid = [
             [Cell(x, y) for x in range(self.width)]
             for y in range(self.height)
@@ -93,13 +96,13 @@ class MazeGenerator:
 
             # encontra vizinhos não visitados
             neighbors = []
-            if y > 0 and not self.grid[y-1][x].visited:
+            if y > 0 and not self.grid[y-1][x].visited and not self.grid[y-1][x].is_42:
                 neighbors.append((x, y-1))
-            if y < self.height-1 and not self.grid[y+1][x].visited:
+            if y < self.height-1 and not self.grid[y+1][x].visited and not self.grid[y+1][x].is_42:
                 neighbors.append((x, y+1))
-            if x > 0 and not self.grid[y][x-1].visited:
+            if x > 0 and not self.grid[y][x-1].visited and not self.grid[y][x-1].is_42:
                 neighbors.append((x-1, y))
-            if x < self.width-1 and not self.grid[y][x+1].visited:
+            if x < self.width-1 and not self.grid[y][x+1].visited and not self.grid[y][x+1].is_42:
                 neighbors.append((x+1, y))
 
             if neighbors:
@@ -110,6 +113,53 @@ class MazeGenerator:
                 stack.append((nx, ny))
             else:
                 stack.pop()
+
+    
+    def count(self):
+        count = 0
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.grid[y][x].is_42:
+                    count += 1
+        print("count 42 =",count)
+
+    def close_cell_walls(self, cell: Cell) -> None:
+        x = cell.x
+        y = cell.y
+        cell.north = True
+        cell.south = True
+        cell.east = True
+        cell.west = True
+        cell.is_42 = True
+        self.grid[y][x - 1].east = True
+        self.grid[y][x + 1].west = True
+        self.grid[y + 1][x].north = True
+        self.grid[y - 1][x].south = True
+
+    def make_42(self):
+        cx = self.width // 2
+        cy = self.height // 2
+        # Number 4 (column 1)
+        for i in range(3):
+            self.close_cell_walls(self.grid[cy - i][cx - 3])
+        # Number 4 (column 2)
+        self.close_cell_walls(self.grid[cy][cx - 2])
+        # Number 4 (column 3)        
+        for i in range(-2, 3):
+            self.close_cell_walls(self.grid[cy + i][cx - 1])
+        # Number 2 (column 1)
+        self.close_cell_walls(self.grid[cy - 2][cx + 1])        
+        for i in range(3):
+            self.close_cell_walls(self.grid[cy + i][cx + 1])
+        # Number 2 (column 2)
+        self.close_cell_walls(self.grid[cy - 2][cx + 2])
+        self.close_cell_walls(self.grid[cy][cx + 2])        
+        self.close_cell_walls(self.grid[cy + 2][cx + 2])
+        # Number 2 (column 3)
+        self.close_cell_walls(self.grid[cy + 2][cx + 3])        
+        for i in range(3):
+            self.close_cell_walls(self.grid[cy - i][cx + 3])
+
 
     def break_north_and_south(self, rows_to_break: List[int], columns_to_break: List[int]) -> None:
         for y in rows_to_break:
@@ -221,14 +271,14 @@ class MazeGenerator:
                 return "   "                
             if len(stack) == 0:
                 return "   "
-            coord_entry: Tuple = stack[0]
-            coord_exit: Tuple = stack[len(stack) - 1]
+            coord_entry: Tuple = self.entry # stack[0]
+            coord_exit: Tuple = self.exit # stack[len(stack) - 1]
             if coord == coord_entry:
-                return " B "
+                return '\033[41m' + " B " + '\033[0m'
             if coord == coord_exit:
-                return " E " 
+                return '\033[42m' + " E " + '\033[0m'
             if coord in stack:
-                return " * "
+                return " * " 
             else:
                 return "   "
         
@@ -236,20 +286,23 @@ class MazeGenerator:
         height = self.height
         width = self.width
         for y in range(height):
-            line_n = "+"
-            line_s = "+"
+            line_n = '\033[42m' + "+" + '\033[0m'
+            line_s = '\033[42m' + "+" + '\033[0m'
             line_e = ""
             for x in range(width):
                 cell = self.grid[y][x]
-                line_n += "---" if cell.north else in_stack(cell, stack)
-                line_n += "+"
+                line_n += '\033[42m' + "---" + '\033[0m' if cell.north else in_stack(cell, stack)
+                line_n += '\033[42m' + "+" + '\033[0m'
                 if x == 0:
-                    line_e += "|" + in_stack(cell, stack) if cell.west else in_stack(cell, stack)
+                    line_e += '\033[42m' + "|" + '\033[0m' + in_stack(cell, stack) if cell.west else in_stack(cell, stack)
                 else:
-                    line_e += in_stack(cell, stack)
-                line_e += "|" if cell.east else " "                
-                line_s += "---" if cell.south else "   "
-                line_s += "+"
+                    if cell.is_42:
+                        line_e += '\033[44m' + " # " + '\033[0m'
+                    else:    
+                        line_e += in_stack(cell, stack)
+                line_e += '\033[42m' + "|" + '\033[0m' if cell.east else " "                
+                line_s += '\033[42m' + "---" + '\033[0m' if cell.south else "   "
+                line_s += '\033[42m' + "+" + '\033[0m'
             if y == 0:
                 print(line_n)           
             print(line_e)
@@ -266,7 +319,8 @@ class MazeGenerator:
                 else:
                     x = random.randint(0, self.width - 1)
                     y = random.randint(0, self.height - 1)                
-                
+                if self.grid[y][x].is_42:
+                    continue
                 neighbors = [
                     (nx, ny)
                     for nx, ny in [
@@ -275,7 +329,7 @@ class MazeGenerator:
                         (x-1, y),
                         (x+1, y),
                     ]
-                    if 0 <= nx < self.width and 0 <= ny < self.height
+                    if 0 <= nx < self.width and 0 <= ny < self.height and not self.grid[ny][nx].is_42
                 ]
 
                 if not neighbors:
@@ -306,7 +360,8 @@ class MazeGenerator:
     def find_best_path(
             self,
             init_coords: Tuple[int, int],
-            end_coords: Tuple) -> List[Tuple[int, int]]:
+            end_coords: Tuple[int, int]
+    ) -> List[Tuple[int, int]]:
         
         paths: Dict[Tuple[int, int], Tuple[int, int]] = {}
         cells_coords: Deque[Tuple[int, int]] = deque()
@@ -329,7 +384,8 @@ class MazeGenerator:
             if not current_cell.west and not self.grid[y][x-1].best_path:
                 neighbors.append((x - 1, y))   
             for n in neighbors:
-                self.grid[y][x].best_path = True
+                nx, ny = n
+                self.grid[ny][nx].best_path = True
                 paths[n] = current_coords
                 cells_coords.append(n)
         
