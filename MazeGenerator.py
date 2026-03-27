@@ -24,6 +24,8 @@ class Cell:
 
 
 class MazeGenerator:
+    IMPERFECTION_ATTEMPTS: int = 3
+
     def __init__(self, config: Dict[str, Any]):
         self.width = config["WIDTH"]
         self.height = config["HEIGHT"]
@@ -53,13 +55,15 @@ class MazeGenerator:
         try:
             with open(filename, "w") as file:
                 file.write(self.format_output_hexa_file())
+        except IOError as error:
+            print(f"Error: IOError. Can not write file '{filename}' ", error)
         except Exception as error:
             print("Error:", error)
 
     @staticmethod
     def remove_wall(current: Cell, neighbor: Cell):
-        dx = neighbor.x - current.x
-        dy = neighbor.y - current.y
+        dx: int = neighbor.x - current.x
+        dy: int  = neighbor.y - current.y
 
         if dx == 1:  # vizinho à direita
             current.east = False
@@ -74,9 +78,9 @@ class MazeGenerator:
             current.north = False
             neighbor.south = False
 
-    def generate_maze(self, start_x=0, start_y=0):
-        stack = []
-        current = self.grid[start_y][start_x]
+    def generate_maze(self, start_x: int =0, start_y: int =0):
+        stack: List[Tuple] = []
+        current: Cell = self.grid[start_y][start_x]
         current.visited = True
 
         stack.append((start_x, start_y))
@@ -138,7 +142,6 @@ class MazeGenerator:
                 #     self.remove_wall(current, self.grid[y][x - 1])
                 # if x < self.width - 1 and self.grid[y][x+1].first_solution and current.east and current.first_solution and self.grid[y][x+1].west:
                 #     self.remove_wall(current, self.grid[y][x + 1])
-
 
     def find_first_solution(self, start_x, start_y, exit_x, exit_y) -> List[Tuple]:
         stack = []
@@ -324,6 +327,47 @@ class MazeGenerator:
                     break
             print(f"x={x}, y={y}, nx={nx}, ny={ny}")
 
+    def make_imperfect_2(self, path: List[Tuple]) -> None:
+        for _ in range(self.IMPERFECTION_ATTEMPTS):
+            while True:
+                x, y = random.choice(path)                
+                
+                neighbors = [
+                    (nx, ny)
+                    for nx, ny in [
+                        (x, y-1),
+                        (x, y+1),
+                        (x-1, y),
+                        (x+1, y),
+                    ]
+                    if 0 <= nx < self.width and 0 <= ny < self.height
+                ]
+
+                if not neighbors:
+                    continue
+
+                nx, ny = random.choice(neighbors)
+                current = self.grid[y][x]
+                neighbor = self.grid[ny][nx]
+
+                dx = nx - x
+                dy = ny - y
+
+                if dx == 1 and current.east:
+                    self.remove_wall(current, neighbor)
+                    break
+                elif dx == -1 and current.west:
+                    self.remove_wall(current, neighbor)
+                    break
+                elif dy == 1 and current.south:
+                    self.remove_wall(current, neighbor)
+                    break
+                elif dy == -1 and current.north:
+                    self.remove_wall(current, neighbor)
+                    break
+            print(f"x={x}, y={y}, nx={nx}, ny={ny}")
+
+
     def new_path(self, solution_path):
         while True:
             if len(solution_path) < 3:
@@ -354,5 +398,3 @@ class MazeGenerator:
             elif dy == -1 and current.north:
                 self.remove_wall(current, neighbor)
                 return           
-
-            
