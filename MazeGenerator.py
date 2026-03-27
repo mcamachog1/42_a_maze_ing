@@ -1,5 +1,6 @@
 import random
-from typing import List, Dict, Any, Tuple,  Optional, Union
+from collections import deque
+from typing import List, Dict, Any, Tuple,  Optional, Union, Deque
 
 
 class Cell:
@@ -13,6 +14,7 @@ class Cell:
         self.visited = False
         self.first_solution = False
         self.second_solution = False
+        self.best_path = False
 
     def get_hexa(self) -> str:
         n: int = int(self.north)
@@ -211,10 +213,12 @@ class MazeGenerator:
                 stack.pop()
         return stack
 
-    def print_maze_ascii(self, stack: List[Tuple]):
+    def print_maze_ascii(self, stack: Optional[List[Tuple]] = None):
 
         def in_stack(cell: Cell, stack: List[Tuple]) -> str:
             coord: Tuple = (cell.x, cell.y)
+            if stack is None:
+                return "   "                
             if len(stack) == 0:
                 return "   "
             coord_entry: Tuple = stack[0]
@@ -228,6 +232,7 @@ class MazeGenerator:
             else:
                 return "   "
         
+        steps: int = 0
         height = self.height
         width = self.width
         for y in range(height):
@@ -249,88 +254,18 @@ class MazeGenerator:
                 print(line_n)           
             print(line_e)
             print(line_s)
+        if stack is not None:
+            steps = len(stack)
+        print(f"Total steps: {steps}")
 
-    def update_maze(self):
-        # # select rows to open
-        # row1: List[Tuple] = []
-        # # row 1
-        # row1 = self.grid[6]
-        # count_south_closed: int = 0
-        # for cell in row1:
-        #     print(f"({cell.x},{cell.y})")
-        #     if cell.south:
-        #         count_south_closed += 1
-        # south_percentage_closed = count_south_closed/self.width
-        # print(f"% south closed: {south_percentage_closed}")
-        column_to_break: List[int] = []
-        count_east_closed: int = 0
-        for x in range(self.width - 1):
-            for y in range(self.height):
-                if self.grid[y][x].east:
-                    count_east_closed += 1
-            east_percentage_closed = count_east_closed/self.height
-            if east_percentage_closed >= 0.50:
-                column_to_break.append(x)
-            count_east_closed = 0
-
-        row_to_break: List[int] = []
-        count_south_closed: int = 0
-        for y in range(self.height - 1):
-            for x in range(self.width):
-                if self.grid[y][x].south:
-                    count_south_closed += 1
-            south_percentage_closed = count_south_closed/self.width
-            if south_percentage_closed >= 0.50:
-                row_to_break.append(y)
-            count_south_closed = 0
-        print(f"column to break: {column_to_break} rows to break: {row_to_break}")
-        self.break_north_and_south(row_to_break, column_to_break)
-
-    def make_imperfect(self) -> None:
-        for _ in range(5):
-            while True:
-                x = random.randint(0, self.width - 1)
-                y = random.randint(0, self.height - 1)
-                
-                neighbors = [
-                    (nx, ny)
-                    for nx, ny in [
-                        (x, y-1),
-                        (x, y+1),
-                        (x-1, y),
-                        (x+1, y),
-                    ]
-                    if 0 <= nx < self.width and 0 <= ny < self.height
-                ]
-
-                if not neighbors:
-                    continue
-
-                nx, ny = random.choice(neighbors)
-                current = self.grid[y][x]
-                neighbor = self.grid[ny][nx]
-
-                dx = nx - x
-                dy = ny - y
-
-                if dx == 1 and current.east:
-                    self.remove_wall(current, neighbor)
-                    break
-                elif dx == -1 and current.west:
-                    self.remove_wall(current, neighbor)
-                    break
-                elif dy == 1 and current.south:
-                    self.remove_wall(current, neighbor)
-                    break
-                elif dy == -1 and current.north:
-                    self.remove_wall(current, neighbor)
-                    break
-            print(f"x={x}, y={y}, nx={nx}, ny={ny}")
-
-    def make_imperfect_2(self, path: List[Tuple]) -> None:
+    def make_imperfect(self, path: Optional[List[Tuple]] = None) -> None:
         for _ in range(self.IMPERFECTION_ATTEMPTS):
             while True:
-                x, y = random.choice(path)                
+                if path is not None:
+                    x, y = random.choice(path)                
+                else:
+                    x = random.randint(0, self.width - 1)
+                    y = random.randint(0, self.height - 1)                
                 
                 neighbors = [
                     (nx, ny)
@@ -368,33 +303,41 @@ class MazeGenerator:
             print(f"x={x}, y={y}, nx={nx}, ny={ny}")
 
 
-    def new_path(self, solution_path):
-        while True:
-            if len(solution_path) < 3:
-                return
+    def find_best_path(
+            self,
+            init_coords: Tuple[int, int],
+            end_coords: Tuple) -> List[Tuple[int, int]]:
+        
+        paths: Dict[Tuple[int, int], Tuple[int, int]] = {}
+        cells_coords: Deque[Tuple[int, int]] = deque()
+        cells_coords.append(init_coords)
 
-            # escolhe dois pontos distantes no caminho
-            (x1, y1) = random.choice(solution_path)
-            (x2, y2) = random.choice(solution_path)
-
-            # evitar escolher o mesmo ou vizinhos diretos
-
-            current = self.grid[y1][x1]
-            neighbor = self.grid[y2][x2]
-
-
-            dx = x2 - x1
-            dy = y2 - y1
-
-            if dx == 1 and current.east:
-                self.remove_wall(current, neighbor)
-                return
-            elif dx == -1 and current.west:
-                self.remove_wall(current, neighbor)
-                return
-            elif dy == 1 and current.south:
-                self.remove_wall(current, neighbor)
-                return
-            elif dy == -1 and current.north:
-                self.remove_wall(current, neighbor)
-                return           
+        while cells_coords:
+            current_coords = cells_coords.popleft()
+            if current_coords == end_coords:
+                break
+            x, y = current_coords       
+            current_cell: Cell = self.grid[y][x]
+            current_cell.best_path = True
+            neighbors = []
+            if not current_cell.north and not self.grid[y-1][x].best_path:
+                neighbors.append((x, y - 1))
+            if not current_cell.south and not self.grid[y+1][x].best_path:
+                neighbors.append((x, y + 1))                
+            if not current_cell.east and not self.grid[y][x+1].best_path:
+                neighbors.append((x + 1, y))
+            if not current_cell.west and not self.grid[y][x-1].best_path:
+                neighbors.append((x - 1, y))   
+            for n in neighbors:
+                self.grid[y][x].best_path = True
+                paths[n] = current_coords
+                cells_coords.append(n)
+        
+        path: List[Tuples[int, int]] = []
+        path.append(current_coords) # check invalid income values for end_coords, here end_coords == current_coords
+        while current_coords != init_coords:
+            current_coords = paths[current_coords]
+            path.append(current_coords)
+        path.reverse()
+        return path
+            

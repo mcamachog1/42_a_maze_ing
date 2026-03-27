@@ -15,17 +15,37 @@ def main() -> None:
     # maze = MazeGenerator(config)
     # maze.generate_maze()
     # maze.create_output_hexa_file(config["OUTPUT_FILE"])
-    stack = []
-    stack2 = []
+    path_1 = []
+    path_2 = []
+
+    # Load maze
     new_maze = read_maze_from_file(config["OUTPUT_FILE"])
+
     start_x, start_y = config["ENTRY"]
     exit_x, exit_y = config["EXIT"]
-    stack = new_maze.find_first_solution(start_x, start_y, exit_x, exit_y)
-    new_maze.print_maze_ascii(stack)
-    print(stack)
-    new_maze.make_imperfect_2(stack)
-    stack2 = new_maze.find_second_solution(start_x, start_y, exit_x, exit_y)
-    new_maze.print_maze_ascii(stack2)
+
+    # Get 1st solution
+    path_1 = new_maze.find_first_solution(start_x, start_y, exit_x, exit_y)
+
+    # If PERFECT is False make imperfect
+    if not config["PERFECT"]:
+        new_maze.make_imperfect(path_1)
+        print("This maze IS NOT PERFECT")
+
+    # Print maze with 1st solution
+    print("Try 1st path:")
+    new_maze.print_maze_ascii(path_1)
+
+    # If maze is imperfect get 2nd solution
+    if not config["PERFECT"]:
+        path_2 = new_maze.find_second_solution(start_x, start_y, exit_x, exit_y)
+        print("Try 2nd path:")
+        new_maze.print_maze_ascii(path_2)
+    
+    # Get de best path (shorter one)
+    print(f"One of the shortest path is:\n")
+    path = new_maze.find_best_path(config["ENTRY"], config["EXIT"])
+    new_maze.print_maze_ascii(path)
 
 
 
