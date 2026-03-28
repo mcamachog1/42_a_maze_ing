@@ -54,7 +54,13 @@ class MazeGenerator:
             for cell in line:
                 output += cell.get_hexa()
             output += "\n"
-        return output            
+        output += "\n"
+        entry_x, entry_y = self.entry
+        exit_x, exit_y = self.exit
+        output += str(entry_x) + "," + str(entry_y)
+        output += "\n"
+        output += str(exit_x) + "," + str(exit_y)
+        return output
 
     def create_output_hexa_file(self, filename: str) -> None:
         try:
@@ -397,3 +403,26 @@ class MazeGenerator:
         path.reverse()
         return path
             
+    def add_path_to_file(self, path: list, filename: str) -> list:
+        coord_path = "\n"
+        for coord1, coord2 in zip(path[:-1], path[1:]):
+            x_1, y_1 = coord1
+            x_2, y_2 = coord2
+            dx = x_2 - x_1
+            dy = y_2 - y_1
+            coord_path += self.get_coord(tuple([dx, dy]))
+        try:
+            with open(filename, "a") as file:
+                file.write(coord_path)
+        except Exception as e:
+            print(f"{e}")
+
+    def get_coord(self, coord: tuple) -> str:
+        if coord == (0, -1):
+            return "N"
+        if coord == (0, 1):
+            return "S"
+        if coord == (1, 0):
+            return "E"
+        if coord == (-1, 0):
+            return "W"

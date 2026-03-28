@@ -20,7 +20,7 @@ def main() -> None:
     print(f"Exit = {maze.grid[exit_y][exit_x].is_42}")
     if maze.grid[begin_y][begin_x].is_42 or maze.grid[exit_y][exit_x].is_42:
         print("Entry or Exit are invalid cells, position belongs to 42")
-        exit()
+        sys.exit()
     maze.generate_maze()
     maze.print_maze_ascii()
 
@@ -62,6 +62,7 @@ def main() -> None:
     print(f"One of the shortest path is:\n")
     path = maze.find_best_path(config["ENTRY"], config["EXIT"])
     maze.print_maze_ascii(path)
+    maze.add_path_to_file(path, config["OUTPUT_FILE"])
 
 
 
