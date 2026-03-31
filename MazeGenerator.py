@@ -120,14 +120,6 @@ class MazeGenerator:
             else:
                 stack.pop()
 
-    
-    def count(self):
-        count = 0
-        for y in range(self.height):
-            for x in range(self.width):
-                if self.grid[y][x].is_42:
-                    count += 1
-        print("count 42 =",count)
 
     def close_cell_walls(self, cell: Cell) -> None:
         x = cell.x
@@ -166,40 +158,6 @@ class MazeGenerator:
         for i in range(3):
             self.close_cell_walls(self.grid[cy - i][cx + 3])
 
-
-    def break_north_and_south(self, rows_to_break: List[int], columns_to_break: List[int]) -> None:
-        for y in rows_to_break:
-            for x in range(self.width):
-                current = self.grid[y][x]
-                # if y > 0 and self.grid[y-1][x].first_solution and current.north and current.first_solution and self.grid[y-1][x].south:
-                #     self.remove_wall(current, self.grid[y-1][x])
-                # if y < self.height - 1 and self.grid[y + 1][x].first_solution and current.south and current.first_solution and self.grid[y+1][x].north:
-                #     self.remove_wall(current, self.grid[y + 1][x])
-                print(f"x={x} y={y}")
-                print(f"neig first_solution: {self.grid[y][x-1].first_solution}")
-                print(f"current west: {current.west}")
-                print(f"current first sol: {current.first_solution}")
-                print(f"neig east: {self.grid[y][x - 1].east}")
-                print()
-                if x > 0 and self.grid[y][x-1].first_solution and current.west and current.first_solution and self.grid[y][x - 1].east:
-                    current.west = False
-                    self.grid[y][x-1].east = False
-                # if x < self.width - 1 and self.grid[y][x+1].first_solution and current.east and current.first_solution and self.grid[y][x+1].west:
-                #     current.east = False
-                #     self.grid[y][x + 1].west = False
-        # for x in columns_to_break:
-        #     for y in range(self.height):
-        #         current = self.grid[y][x]
-        #         if y > 0 and self.grid[y-1][x].first_solution and current.north and current.first_solution and self.grid[y-1][x].south:
-        #             current.north = False
-        #             self.grid[y-1][x].south = False
-        #         if y < self.height - 1 and self.grid[y + 1][x].first_solution and current.south and current.first_solution and self.grid[y+1][x].north:
-        #             current.south = False
-        #             self.grid[y + 1][x].north = False
-                # if x > 0 and self.grid[y][x-1].first_solution and current.west and current.first_solution and self.grid[y][x - 1].east:
-                #     self.remove_wall(current, self.grid[y][x - 1])
-                # if x < self.width - 1 and self.grid[y][x+1].first_solution and current.east and current.first_solution and self.grid[y][x+1].west:
-                #     self.remove_wall(current, self.grid[y][x + 1])
 
     def find_first_solution(self, start_x, start_y, exit_x, exit_y) -> List[Tuple]:
         stack = []
@@ -396,7 +354,7 @@ class MazeGenerator:
                 cells_coords.append(n)
         
         path: List[Tuples[int, int]] = []
-        path.append(current_coords) # check invalid income values for end_coords, here end_coords == current_coords
+        path.append(current_coords)
         while current_coords != init_coords:
             current_coords = paths[current_coords]
             path.append(current_coords)

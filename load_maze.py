@@ -8,10 +8,25 @@ def read_maze_from_file(filename: str) -> MazeGenerator:
     # Read the file to get height and width
     try:
         with open(filename) as file:
+            i = 1
             for line in file:
-                line = line.strip()
-                height += 1
-            width: int = len(line)
+                if line and line != "\n" and i != 0:
+                    width: int = len(line)
+                    line = line.strip()
+                    height += 1
+                if line == "\n":
+                    i = 0
+                    continue
+                if i == 1:
+                    entry_x, entry_y = line.split(",")
+                    entry: tuple[int, int] = [int(entry_x), int(entry_y)]
+                    print(f"entry: {entry}") 
+                if i == 2:
+                    pass
+                if i == 3:
+                    pass
+                i += 1
+
     except Exception as e:
         print(f"{e}")
     base_config: Dict[str, Any] = {"WIDTH": width, "HEIGHT": height}
