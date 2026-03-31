@@ -8,18 +8,21 @@ from load_maze import read_maze_from_file
 
 def main() -> None:
     if len(sys.argv) != 2:
-        print("Usage:  python3 a_maze_ing.py <config.txt>")
+        print("Usage:  python3 a_maze_ing.py <config.txt>", file=sys.stderr)
         sys.exit()
     config: Dict[str, Any] = read_config_file(sys.argv[1])
     convert_config_values(config)
     maze = MazeGenerator(config)
-    maze.make_42()
+    if config["WIDTH"] < 9 or config["HEIGHT"] < 7:
+        print("“42” pattern is omitted in case Width is lower than 9 and Height is lower than 7", file=sys.stderr)
+    else:
+        maze.make_42()
     begin_x, begin_y = config["ENTRY"]
     exit_x, exit_y = config["EXIT"]
     print(f"Begin = {maze.grid[begin_y][begin_x].is_42}")
     print(f"Exit = {maze.grid[exit_y][exit_x].is_42}")
     if maze.grid[begin_y][begin_x].is_42 or maze.grid[exit_y][exit_x].is_42:
-        print("Entry or Exit are invalid cells, position belongs to 42")
+        print("Entry or Exit are invalid cells, position belongs to 42", file=sys.stderr)
         sys.exit()
     maze.generate_maze()
     maze.print_maze_ascii()
@@ -28,7 +31,7 @@ def main() -> None:
     path_2 = []
 
     # Load maze
-    new_maze = read_maze_from_file(config["OUTPUT_FILE"])
+    # new_maze = read_maze_from_file(config["OUTPUT_FILE"])
 
     start_x, start_y = config["ENTRY"]
     exit_x, exit_y = config["EXIT"]
@@ -91,18 +94,18 @@ def read_config_file(filename: str) -> Dict[str, Any]:
                     raise ValueError(f"'{key}' is missing.")
 
     except FileNotFoundError:
-        print("RESPONSE: Archive not found")
+        print("RESPONSE: Archive not found", file=sys.stderr)
         sys.exit()
     except PermissionError:
-        print("RESPONSE: Archive deny access")
+        print("RESPONSE: Archive deny access", file=sys.stderr)
         sys.exit()
     except ValueError as error:
-        print(f'RESPONSE: Incorrect config format. {error} Check "config.txt" file')
+        print(f'RESPONSE: Incorrect config format. {error} Check "config.txt" file', file=sys.stderr)
         sys.exit()
     except Exception as error:
         print(
             f"RESPONSE:  Unexpected error: {error}"
-            f"- Type: {type(error).__name__}")
+            f"- Type: {type(error).__name__}", file=sys.stderr)
         sys.exit()
     return config
 
@@ -113,7 +116,6 @@ def is_format_output_file_name(output_file: str) -> bool:
     if output_file.count(".") != 1:
         raise ValueError("'OUTPUT_FILE' must be like -> 'name.txt'")
     name, type = output_file.split(".")
-
     return type.lower() == "txt"
 
 
@@ -128,8 +130,8 @@ def convert_config_values(config: Dict[str, Any]) -> None:
         config["HEIGHT"] = int(config["HEIGHT"])
         if config["WIDTH"] < 0 or config["HEIGHT"] < 0:
             raise ValueError("Width and Height must be positive")
-        if config["WIDTH"] < 9 or config["HEIGHT"] < 7:
-            raise ValueError("Width must be at least 9 and Height must be at least 7")        
+        #if config["WIDTH"] < 9 or config["HEIGHT"] < 7:
+        #    raise ValueError("Width must be at least 9 and Height must be at least 7")        
         if "," not in config["ENTRY"] or "," not in config["EXIT"]:
             raise ValueError("'ENTRY' and 'EXIT' must have only two values separated by ','")
         x, y = config["ENTRY"].split(",")
@@ -150,12 +152,12 @@ def convert_config_values(config: Dict[str, Any]) -> None:
         config["OUTPUT_FILE"] = config["OUTPUT_FILE"].lower()
     except ValueError as error:
         value = error.args[0].split(":")[-1].strip()
-        print(f"Invalid value: {value}")
+        print(f"Invalid value: {value}", file=sys.stderr)
         sys.exit()
     except Exception as error:
         print(
             f"RESPONSE:  Unexpected error: {error}"
-            f"- Type: {type(error).__name__}"
+            f"- Type: {type(error).__name__}", file=sys.stderr
         )
         sys.exit()
 

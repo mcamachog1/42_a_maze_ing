@@ -39,8 +39,8 @@ class MazeGenerator:
             for y in range(self.height)
         ]
         seed = config.get("SEED", None)
-        if seed is not None:
-            random.seed(seed)
+        #if seed is not None:
+        random.seed(seed)
 
     def print_maze_hexa(self) -> None:
         for line in self.grid:
@@ -67,9 +67,9 @@ class MazeGenerator:
             with open(filename, "w") as file:
                 file.write(self.format_output_hexa_file())
         except IOError as error:
-            print(f"Error: IOError. Can not write file '{filename}' ", error)
+            print(f"Error: IOError. Can not write file '{filename}' {error}", file=sys.stderr)
         except Exception as error:
-            print("Error:", error)
+            print(f"Error: {error}", file=sys.stderr)
 
     @staticmethod
     def remove_wall(current: Cell, neighbor: Cell):
