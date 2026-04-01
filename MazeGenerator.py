@@ -1,6 +1,47 @@
 import random
+from enum import Enum
 from collections import deque
 from typing import List, Dict, Any, Tuple,  Optional, Union, Deque
+
+
+class CellColor(Enum):
+# Reset
+    # Texto (foreground)
+    BLACK = '\033[30m'
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+    MAGENTA = '\033[35m'
+    CYAN = '\033[36m'
+    WHITE = '\033[37m'
+    # Fundo (background)
+    BG_BLACK = '\033[40m'
+    BG_RED = '\033[41m'
+    BG_GREEN = '\033[42m'
+    BG_YELLOW = '\033[43m'
+    BG_BLUE = '\033[44m'
+    BG_MAGENTA = '\033[45m'
+    BG_CYAN = '\033[46m'
+    BG_WHITE = '\033[47m'
+    # Cores brilhantes (texto)
+    BRIGHT_BLACK = '\033[90m'
+    BRIGHT_RED = '\033[91m'
+    BRIGHT_GREEN = '\033[92m'
+    BRIGHT_YELLOW = '\033[93m'
+    BRIGHT_BLUE = '\033[94m'
+    BRIGHT_MAGENTA = '\033[95m'
+    BRIGHT_CYAN = '\033[96m'
+    BRIGHT_WHITE = '\033[97m'
+    # Cores brilhantes (fundo)
+    BG_BRIGHT_BLACK = '\033[100m'
+    BG_BRIGHT_RED = '\033[101m'
+    BG_BRIGHT_GREEN = '\033[102m'
+    BG_BRIGHT_YELLOW = '\033[103m'
+    BG_BRIGHT_BLUE = '\033[104m'
+    BG_BRIGHT_MAGENTA = '\033[105m'
+    BG_BRIGHT_CYAN = '\033[106m'
+    BG_BRIGHT_WHITE = '\033[107m'
 
 
 class Cell:
@@ -28,12 +69,16 @@ class Cell:
 
 class MazeGenerator:
     IMPERFECTION_ATTEMPTS: int = 3
-
+    EXTERNAL_WALL_COLOR = CellColor.BG_BRIGHT_YELLOW.value
+    END_COLOR = '\033[0m'
+    WALL_COLORS = random.choice(list(CellColor)).value
+    BG_COLORS: str
     def __init__(self, config: Dict[str, Any]):
         self.width = config["WIDTH"]
         self.height = config["HEIGHT"]
         self.entry = config["ENTRY"]
         self.exit = config["EXIT"]
+        self.perfect = config["PERFECT"]
         self.grid = [
             [Cell(x, y) for x in range(self.width)]
             for y in range(self.height)
@@ -90,6 +135,9 @@ class MazeGenerator:
             neighbor.south = False
 
     def generate_maze(self, start_x: int =0, start_y: int =0):
+        self.WALL_COLORS = random.choice(list(CellColor)).value
+        bg_colors = [c for c in CellColor if c.name.startswith("BG_")]
+        self.BG_COLORS = random.choice(bg_colors).value
         stack: List[Tuple] = []
         # If exist a maze, close all walls and reset visited
         for line in self.grid:
@@ -131,6 +179,9 @@ class MazeGenerator:
                 stack.append((nx, ny))
             else:
                 stack.pop()
+        if not self.perfect:
+            self.make_imperfect()
+
 
 
     def close_cell_walls(self, cell: Cell) -> None:
@@ -171,8 +222,10 @@ class MazeGenerator:
             self.close_cell_walls(self.grid[cy - i][cx + 3])
 
 
-    def find_first_solution(self, start_x, start_y, exit_x, exit_y) -> List[Tuple]:
+    def find_first_solution(self) -> List[Tuple]:
         stack = []
+        start_x, start_y = self.entry
+        exit_x, exit_y = self.exit
         current = self.grid[start_y][start_x]
         current.first_solution = True
 
@@ -241,48 +294,58 @@ class MazeGenerator:
 
     def print_maze_ascii(self, stack: Optional[List[Tuple]] = None):
 
+        print("\033[H\033[J", end="")  # limpa terminal
         def in_stack(cell: Cell, stack: List[Tuple]) -> str:
             coord: Tuple = (cell.x, cell.y)
             if stack is None:
-                return "   "                
+                return self.BG_COLORS + "   " + self.END_COLOR                
             if len(stack) == 0:
-                return "   "
+                return self.BG_COLORS + "   " + self.END_COLOR
             coord_entry: Tuple = self.entry # stack[0]
             coord_exit: Tuple = self.exit # stack[len(stack) - 1]
             if coord == coord_entry:
-                return '\033[44m' + " B " + '\033[0m'
+                return '\033[44m' + " B " + self.END_COLOR
             if coord == coord_exit:
-                return '\033[44m' + " E " + '\033[0m'
+                return '\033[44m' + " E " + self.END_COLOR
             if coord in stack:
-                return " * " 
+                return self.BG_COLORS + " * " + self.END_COLOR
             else:
-                return "   "
+                return self.BG_COLORS + "   " + self.END_COLOR
         
         steps: int = 0
         height = self.height
         width = self.width
         for y in range(height):
-            line_n = '\033[42m' + "+" + '\033[0m'
-            line_s = '\033[42m' + "+" + '\033[0m'
+            line_n = self.EXTERNAL_WALL_COLOR + "+" + self.END_COLOR
+            line_s = self.EXTERNAL_WALL_COLOR + "+" + self.END_COLOR
             line_e = ""
             for x in range(width):
                 cell = self.grid[y][x]
-                line_n += '\033[42m' + "---" + '\033[0m' if cell.north else in_stack(cell, stack)
-                line_n += '\033[42m' + "+" + '\033[0m'
+                line_n += self.EXTERNAL_WALL_COLOR + "---" + self.END_COLOR if cell.north else in_stack(cell, stack)
+                line_n += self.EXTERNAL_WALL_COLOR + "+" + self.END_COLOR
                 if x == 0:
-                    line_e += '\033[42m' + "|" + '\033[0m' + in_stack(cell, stack) if cell.west else in_stack(cell, stack)
+                    line_e += self.EXTERNAL_WALL_COLOR + "|" + self.END_COLOR + in_stack(cell, stack) if cell.west else in_stack(cell, stack)
                 else:
                     if cell.x == self.entry[0] and cell.y == self.entry[1]:
-                        line_e += '\033[48;5;129m' + " B " + '\033[0m'
+                        line_e += self.WALL_COLORS + '\033[1m' + " B " + self.END_COLOR
                     elif cell.x == self.exit[0] and cell.y == self.exit[1]:
-                        line_e += '\033[48;5;208m' + " E " + '\033[0m'                    
+                        line_e += self.WALL_COLORS + " E " + self.END_COLOR                    
                     elif cell.is_42:
-                        line_e += '\033[44m' + " # " + '\033[0m'
+                        line_e += self.EXTERNAL_WALL_COLOR + " # " + self.END_COLOR
                     else:    
                         line_e += in_stack(cell, stack)
-                line_e += '\033[42m' + "|" + '\033[0m' if cell.east else " "                
-                line_s += '\033[42m' + "---" + '\033[0m' if cell.south else "   "
-                line_s += '\033[42m' + "+" + '\033[0m'
+                if x < width - 1:
+                    line_e += self.WALL_COLORS + "|" + self.END_COLOR if cell.east else self.BG_COLORS + " " + self.END_COLOR               
+                else:
+                    line_e += self.EXTERNAL_WALL_COLOR + "|" + self.END_COLOR if cell.east else self.BG_COLORS + " " + self.END_COLOR
+                if y < height - 1:
+                    line_s += self.WALL_COLORS + "---" + self.END_COLOR if cell.south else self.BG_COLORS + "   " + self.END_COLOR
+                else:
+                    line_s += self.EXTERNAL_WALL_COLOR + "---" + self.END_COLOR if cell.south else self.BG_COLORS + "   " + self.END_COLOR
+                if x < width - 1 and y < height - 1:
+                    line_s += self.WALL_COLORS + "+" + self.END_COLOR
+                else:
+                    line_s += self.EXTERNAL_WALL_COLOR + "+" + self.END_COLOR
             if y == 0:
                 print(line_n)           
             print(line_e)

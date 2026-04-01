@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Tuple,  Optional, Union
 import sys
-from MazeGenerator import MazeGenerator
+from MazeGenerator import MazeGenerator, CellColor
 from load_maze import read_maze_from_file
 
 
@@ -19,62 +19,73 @@ def main() -> None:
         maze.make_42()
     begin_x, begin_y = config["ENTRY"]
     exit_x, exit_y = config["EXIT"]
-    print(f"Begin = {maze.grid[begin_y][begin_x].is_42}")
-    print(f"Exit = {maze.grid[exit_y][exit_x].is_42}")
+    # print(f"Begin = {maze.grid[begin_y][begin_x].is_42}")
+    # print(f"Exit = {maze.grid[exit_y][exit_x].is_42}")
     if maze.grid[begin_y][begin_x].is_42 or maze.grid[exit_y][exit_x].is_42:
         print("Entry or Exit are invalid cells, position belongs to 42", file=sys.stderr)
         sys.exit()
-    maze.generate_maze()
-    maze.print_maze_ascii()
-    maze.create_output_hexa_file(config["OUTPUT_FILE"])
-    path_1 = []
-    path_2 = []
+    # maze.generate_maze()
+    # maze.print_maze_ascii()
+    # maze.create_output_hexa_file(config["OUTPUT_FILE"])
+    # path_1 = []
+    # path_2 = []
 
-    # Load maze
-    # new_maze = read_maze_from_file(config["OUTPUT_FILE"])
+    # # Load maze
+    # # new_maze = read_maze_from_file(config["OUTPUT_FILE"])
 
-    start_x, start_y = config["ENTRY"]
-    exit_x, exit_y = config["EXIT"]
+    # start_x, start_y = config["ENTRY"]
+    # exit_x, exit_y = config["EXIT"]
 
-    # maze.print_maze_ascii([(0,0), (1, 1)])
-    # Get 1st solution
-    path_1 = maze.find_first_solution(start_x, start_y, exit_x, exit_y)
+    # # maze.print_maze_ascii([(0,0), (1, 1)])
+    # # Get 1st solution
+    # path_1 = maze.find_first_solution()
     
-    # If PERFECT is False make imperfect
-    if not config["PERFECT"]:
-        maze.make_imperfect(path_1)
-        print("This maze IS NOT PERFECT")
-    else:
-        print("This maze IS PERFECT")
+    # # If PERFECT is False make imperfect
+    # if not config["PERFECT"]:
+    #     maze.make_imperfect(path_1)
+    #     print("This maze IS NOT PERFECT")
+    # else:
+    #     print("This maze IS PERFECT")
 
-    # Print maze with 1st solution
-    print("Try 1st path:")
-    maze.print_maze_ascii(path_1)
+    # # Print maze with 1st solution
+    # print("Try 1st path:")
+    # #maze.print_maze_ascii(path_1)
 
-    # If maze is imperfect get 2nd solution
-    if not config["PERFECT"]:
-        path_2 = maze.find_second_solution(start_x, start_y, exit_x, exit_y)
-        print("Try 2nd path:")
-        maze.print_maze_ascii(path_2)
+    # # If maze is imperfect get 2nd solution
+    # if not config["PERFECT"]:
+    #     path_2 = maze.find_second_solution(start_x, start_y, exit_x, exit_y)
+    #     print("Try 2nd path:")
+    #     maze.print_maze_ascii(path_2)
     
-    # Get de best path (shorter one)
-    print(f"One of the shortest path is:\n")
-    path = maze.find_best_path(config["ENTRY"], config["EXIT"])
-    maze.add_path_to_file(path, config["OUTPUT_FILE"])
-    maze.print_maze_ascii(path)
+    # # Get de best path (shorter one)
+    # print(f"One of the shortest path is:\n")
+    # path = maze.find_best_path(config["ENTRY"], config["EXIT"])
+    # maze.add_path_to_file(path, config["OUTPUT_FILE"])
+    #maze.print_maze_ascii()
     
 # *******************
-    print("Interface wit menu options:")
+    print("Interface with menu options:")
 
     path: List[Tuple[int, int]] = []
     option_2: int = 0
+    maze.generate_maze()
+    maze.create_output_hexa_file(config["OUTPUT_FILE"])
+    path = []
+    maze.print_maze_ascii()
     while True:
-        options = int(input("1: regen; 2: path; 3: color; 4: quit\n").strip().lower())
+        try:
+            n_options = [1, 2, 3, 4]
+            options = int(input("1: regen; 2: path; 3: color; 4: quit\n").strip().lower())
+            if options not in n_options:
+                raise ValueError
+        except ValueError:
+            print(f"Invalid input. Expected one of: {n_options}")
+            continue
         if options == 1:
-            path = []
+            option_2 = 0
             maze.generate_maze()
+            path = []
             maze.print_maze_ascii()
-            maze.create_output_hexa_file(config["OUTPUT_FILE"])
         elif options == 2:
             option_2 += 1
             if not path:
@@ -87,7 +98,9 @@ def main() -> None:
         elif options == 3:
             pass
         elif options == 4:
+            print("\033[H\033[J", end="")
             sys.exit()
+        print(list(CellColor))
 
 # *******************
 
