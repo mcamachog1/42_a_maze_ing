@@ -91,6 +91,18 @@ class MazeGenerator:
 
     def generate_maze(self, start_x: int =0, start_y: int =0):
         stack: List[Tuple] = []
+        # If exist a maze, close all walls and reset visited
+        for line in self.grid:
+            for cell in line:
+                cell.north = True
+                cell.east = True
+                cell.south = True
+                cell.west = True
+                cell.visited = False
+                cell.first_solution = False
+                cell.second_solution = False
+                cell.best_path = False
+        
         current: Cell = self.grid[start_y][start_x]
         current.visited = True
 
@@ -238,9 +250,9 @@ class MazeGenerator:
             coord_entry: Tuple = self.entry # stack[0]
             coord_exit: Tuple = self.exit # stack[len(stack) - 1]
             if coord == coord_entry:
-                return '\033[41m' + " B " + '\033[0m'
+                return '\033[44m' + " B " + '\033[0m'
             if coord == coord_exit:
-                return '\033[42m' + " E " + '\033[0m'
+                return '\033[44m' + " E " + '\033[0m'
             if coord in stack:
                 return " * " 
             else:
@@ -260,7 +272,11 @@ class MazeGenerator:
                 if x == 0:
                     line_e += '\033[42m' + "|" + '\033[0m' + in_stack(cell, stack) if cell.west else in_stack(cell, stack)
                 else:
-                    if cell.is_42:
+                    if cell.x == self.entry[0] and cell.y == self.entry[1]:
+                        line_e += '\033[48;5;129m' + " B " + '\033[0m'
+                    elif cell.x == self.exit[0] and cell.y == self.exit[1]:
+                        line_e += '\033[48;5;208m' + " E " + '\033[0m'                    
+                    elif cell.is_42:
                         line_e += '\033[44m' + " # " + '\033[0m'
                     else:    
                         line_e += in_stack(cell, stack)

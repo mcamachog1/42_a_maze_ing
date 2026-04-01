@@ -63,6 +63,34 @@ def main() -> None:
     maze.add_path_to_file(path, config["OUTPUT_FILE"])
     maze.print_maze_ascii(path)
     
+# *******************
+    print("Interface wit menu options:")
+
+    path: List[Tuple[int, int]] = []
+    option_2: int = 0
+    while True:
+        options = int(input("1: regen; 2: path; 3: color; 4: quit\n").strip().lower())
+        if options == 1:
+            path = []
+            maze.generate_maze()
+            maze.print_maze_ascii()
+            maze.create_output_hexa_file(config["OUTPUT_FILE"])
+        elif options == 2:
+            option_2 += 1
+            if not path:
+                path = maze.find_best_path(config["ENTRY"], config["EXIT"])
+                maze.add_path_to_file(path, config["OUTPUT_FILE"])
+            if option_2  % 2 != 0:
+                maze.print_maze_ascii(path)
+            else:
+                maze.print_maze_ascii()
+        elif options == 3:
+            pass
+        elif options == 4:
+            sys.exit()
+
+# *******************
+
 
 
 
