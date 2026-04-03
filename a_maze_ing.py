@@ -2,8 +2,9 @@
 
 from typing import List, Dict, Any, Tuple,  Optional, Union
 import sys
-from MazeGenerator import MazeGenerator, CellColor
+from MazeGenerator import MazeGenerator
 from load_maze import read_maze_from_file
+import os
 
 
 def main() -> None:
@@ -64,43 +65,63 @@ def main() -> None:
     #maze.print_maze_ascii()
     
 # *******************
-    print("Interface with menu options:")
+    #print("Interface with menu options:")
 
     path: List[Tuple[int, int]] = []
     option_2: int = 0
     maze.generate_maze()
-    maze.create_output_hexa_file(config["OUTPUT_FILE"])
-    path = []
-    maze.print_maze_ascii()
+    path = maze.find_best_path(config["ENTRY"], config["EXIT"])
+    maze.create_output_hexa_file(path, config["OUTPUT_FILE"])
+    os.system("clear")
+    #maze.print_maze_ascii()
+    flag = 0
+    first = True
     while True:
         try:
+            if first:
+                maze.print_maze_ascii()
+                first = False
             n_options = [1, 2, 3, 4]
+            print("Interface with menu options:")
             options = int(input("1: regen; 2: path; 3: color; 4: quit\n").strip().lower())
             if options not in n_options:
                 raise ValueError
         except ValueError:
             print(f"Invalid input. Expected one of: {n_options}")
+            os.system("clear")
+            first = True
             continue
         if options == 1:
             option_2 = 0
             maze.generate_maze()
-            path = []
+            path = maze.find_best_path(config["ENTRY"], config["EXIT"])
+            maze.create_output_hexa_file(path, config["OUTPUT_FILE"])
+            os.system("clear")
             maze.print_maze_ascii()
+            flag = 0
         elif options == 2:
             option_2 += 1
-            if not path:
-                path = maze.find_best_path(config["ENTRY"], config["EXIT"])
-                maze.add_path_to_file(path, config["OUTPUT_FILE"])
+            # if not path:
+            #     path = maze.find_best_path(config["ENTRY"], config["EXIT"])
+            #     maze.add_path_to_file(path, config["OUTPUT_FILE"])
             if option_2  % 2 != 0:
+                os.system("clear")
                 maze.print_maze_ascii(path)
+                flag = 1
             else:
+                os.system("clear")
                 maze.print_maze_ascii()
+                flag = 0
         elif options == 3:
-            pass
+            maze.change_color()
+            os.system("clear")
+            if flag == 0:
+                maze.print_maze_ascii()
+            elif path:
+                maze.print_maze_ascii(path)
         elif options == 4:
-            print("\033[H\033[J", end="")
+            os.system("clear")
             sys.exit()
-        print(list(CellColor))
 
 # *******************
 

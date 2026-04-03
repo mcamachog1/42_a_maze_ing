@@ -2,6 +2,7 @@ import random
 from enum import Enum
 from collections import deque
 from typing import List, Dict, Any, Tuple,  Optional, Union, Deque
+import sys
 
 
 class CellColor(Enum):
@@ -53,10 +54,9 @@ class Cell:
         self.x = x
         self.y = y
         self.visited = False
-        self.first_solution = False
-        self.second_solution = False
         self.best_path = False
         self.is_42 = False
+        self.cardinal= ""
 
     def get_hexa(self) -> str:
         n: int = int(self.north)
@@ -71,27 +71,30 @@ class MazeGenerator:
     IMPERFECTION_ATTEMPTS: int = 3
     EXTERNAL_WALL_COLOR = CellColor.BG_BRIGHT_YELLOW.value
     END_COLOR = '\033[0m'
-    WALL_COLORS = random.choice(list(CellColor)).value
-    BG_COLORS: str
+    BG_COLORS: str = '\033[30m'
+    WALL_COLORS: str = random.choice(list(CellColor)).value
+    UP_ARROW = '\u2934'
+    DOWN_ARROW = '\u2935'
+    LEFT_ARROW = '\u21E6'
+    RIGHT_ARROW = '\u21E8'
+
     def __init__(self, config: Dict[str, Any]):
         self.width = config["WIDTH"]
         self.height = config["HEIGHT"]
         self.entry = config["ENTRY"]
         self.exit = config["EXIT"]
         self.perfect = config["PERFECT"]
+        self.new_colors = False
         self.grid = [
             [Cell(x, y) for x in range(self.width)]
             for y in range(self.height)
         ]
         seed = config.get("SEED", None)
-        #if seed is not None:
         random.seed(seed)
-
-    def print_maze_hexa(self) -> None:
-        for line in self.grid:
-            for cell in line:
-                print(cell.get_hexa(), end="")
-            print()
+    
+    @classmethod
+    def change_color(cls):
+        cls.WALL_COLORS = random.choice(list(CellColor)).value
 
     def format_output_hexa_file(self) -> str:
         output: str = ""
@@ -107,10 +110,17 @@ class MazeGenerator:
         output += str(exit_x) + "," + str(exit_y)
         return output
 
-    def create_output_hexa_file(self, filename: str) -> None:
+    def create_output_hexa_file(self, path: List[Tuple[int, int]],filename: str) -> None:
         try:
             with open(filename, "w") as file:
                 file.write(self.format_output_hexa_file())
+        except IOError as error:
+            print(f"Error: IOError. Can not write file '{filename}' {error}", file=sys.stderr)
+        except Exception as error:
+            print(f"Error: {error}", file=sys.stderr)
+        try:
+            with open(filename, "a") as file:
+                file.write(self.add_path_to_file(path, filename))
         except IOError as error:
             print(f"Error: IOError. Can not write file '{filename}' {error}", file=sys.stderr)
         except Exception as error:
@@ -135,9 +145,6 @@ class MazeGenerator:
             neighbor.south = False
 
     def generate_maze(self, start_x: int =0, start_y: int =0):
-        self.WALL_COLORS = random.choice(list(CellColor)).value
-        bg_colors = [c for c in CellColor if c.name.startswith("BG_")]
-        self.BG_COLORS = random.choice(bg_colors).value
         stack: List[Tuple] = []
         # If exist a maze, close all walls and reset visited
         for line in self.grid:
@@ -147,8 +154,6 @@ class MazeGenerator:
                 cell.south = True
                 cell.west = True
                 cell.visited = False
-                cell.first_solution = False
-                cell.second_solution = False
                 cell.best_path = False
         
         current: Cell = self.grid[start_y][start_x]
@@ -181,8 +186,6 @@ class MazeGenerator:
                 stack.pop()
         if not self.perfect:
             self.make_imperfect()
-
-
 
     def close_cell_walls(self, cell: Cell) -> None:
         x = cell.x
@@ -221,80 +224,7 @@ class MazeGenerator:
         for i in range(3):
             self.close_cell_walls(self.grid[cy - i][cx + 3])
 
-
-    def find_first_solution(self) -> List[Tuple]:
-        stack = []
-        start_x, start_y = self.entry
-        exit_x, exit_y = self.exit
-        current = self.grid[start_y][start_x]
-        current.first_solution = True
-
-        stack.append((start_x, start_y))
-
-        while stack:
-            x, y = stack[-1]
-            current = self.grid[y][x]
-            self.grid[y][x].first_solution = True
-            if x == exit_x and y == exit_y:
-                break
-
-            # find neighbors without visit and without wall
-            neighbors = []
-            if not current.north and not self.grid[y-1][x].first_solution:
-                neighbors.append((x, y - 1))
-            if not current.south and not self.grid[y+1][x].first_solution:
-                neighbors.append((x, y + 1))                
-            if not current.east and not self.grid[y][x+1].first_solution:
-                neighbors.append((x + 1, y))
-            if not current.west and not self.grid[y][x-1].first_solution:
-                neighbors.append((x - 1, y))                
-
-            if neighbors:
-                nx, ny = random.choice(neighbors)
-                neighbor = self.grid[ny][nx]
-                neighbor.first_solution = True
-                stack.append((nx, ny))
-            else:
-                stack.pop()
-        return stack
-
-    def find_second_solution(self, start_x, start_y, exit_x, exit_y) -> List[Tuple]:
-        stack = []
-        current = self.grid[start_y][start_x]
-        current.second_solution = True
-
-        stack.append((start_x, start_y))
-
-        while stack:
-            x, y = stack[-1]
-            current = self.grid[y][x]
-            self.grid[y][x].second_solution = True
-            if x == exit_x and y == exit_y:
-                break
-
-            # find neighbors without visit and without wall
-            neighbors = []
-            if not current.north and not self.grid[y-1][x].second_solution:
-                neighbors.append((x, y - 1))
-            if not current.south and not self.grid[y+1][x].second_solution:
-                neighbors.append((x, y + 1))                
-            if not current.east and not self.grid[y][x+1].second_solution:
-                neighbors.append((x + 1, y))
-            if not current.west and not self.grid[y][x-1].second_solution:
-                neighbors.append((x - 1, y))                
-
-            if neighbors:
-                nx, ny = random.choice(neighbors)
-                neighbor = self.grid[ny][nx]
-                neighbor.second_solution = True
-                stack.append((nx, ny))
-            else:
-                stack.pop()
-        return stack
-
     def print_maze_ascii(self, stack: Optional[List[Tuple]] = None):
-
-        print("\033[H\033[J", end="")  # limpa terminal
         def in_stack(cell: Cell, stack: List[Tuple]) -> str:
             coord: Tuple = (cell.x, cell.y)
             if stack is None:
@@ -308,7 +238,16 @@ class MazeGenerator:
             if coord == coord_exit:
                 return '\033[44m' + " E " + self.END_COLOR
             if coord in stack:
-                return self.BG_COLORS + " * " + self.END_COLOR
+                if cell.cardinal == "N":
+                    return '\033[37m' + " " + self.UP_ARROW + " " + self.END_COLOR
+                if cell.cardinal == "S":
+                    return '\033[37m' + " " + self.DOWN_ARROW + " " + self.END_COLOR
+                if cell.cardinal == "E":
+                    return '\033[37m' + " " + self.RIGHT_ARROW + " " + self.END_COLOR
+                if cell.cardinal == "W":
+                    return '\033[37m' + " " + self.LEFT_ARROW + " " + self.END_COLOR                    
+                else:
+                    return self.BG_COLORS + " " + "*" + " " + self.END_COLOR
             else:
                 return self.BG_COLORS + "   " + self.END_COLOR
         
@@ -316,13 +255,13 @@ class MazeGenerator:
         height = self.height
         width = self.width
         for y in range(height):
-            line_n = self.EXTERNAL_WALL_COLOR + "+" + self.END_COLOR
-            line_s = self.EXTERNAL_WALL_COLOR + "+" + self.END_COLOR
+            line_n = self.EXTERNAL_WALL_COLOR + " " + self.END_COLOR
+            line_s = self.EXTERNAL_WALL_COLOR + " " + self.END_COLOR
             line_e = ""
             for x in range(width):
                 cell = self.grid[y][x]
                 line_n += self.EXTERNAL_WALL_COLOR + "---" + self.END_COLOR if cell.north else in_stack(cell, stack)
-                line_n += self.EXTERNAL_WALL_COLOR + "+" + self.END_COLOR
+                line_n += self.EXTERNAL_WALL_COLOR + " " + self.END_COLOR
                 if x == 0:
                     line_e += self.EXTERNAL_WALL_COLOR + "|" + self.END_COLOR + in_stack(cell, stack) if cell.west else in_stack(cell, stack)
                 else:
@@ -343,9 +282,9 @@ class MazeGenerator:
                 else:
                     line_s += self.EXTERNAL_WALL_COLOR + "---" + self.END_COLOR if cell.south else self.BG_COLORS + "   " + self.END_COLOR
                 if x < width - 1 and y < height - 1:
-                    line_s += self.WALL_COLORS + "+" + self.END_COLOR
+                    line_s += self.WALL_COLORS + " " + self.END_COLOR
                 else:
-                    line_s += self.EXTERNAL_WALL_COLOR + "+" + self.END_COLOR
+                    line_s += self.EXTERNAL_WALL_COLOR + " " + self.END_COLOR
             if y == 0:
                 print(line_n)           
             print(line_e)
@@ -399,7 +338,6 @@ class MazeGenerator:
                     break
             print(f"x={x}, y={y}, nx={nx}, ny={ny}")
 
-
     def find_best_path(
             self,
             init_coords: Tuple[int, int],
@@ -438,6 +376,7 @@ class MazeGenerator:
             current_coords = paths[current_coords]
             path.append(current_coords)
         path.reverse()
+        self.set_cell_arrow_direction(path)
         return path
             
     def add_path_to_file(self, path: list, filename: str) -> list:
@@ -447,14 +386,14 @@ class MazeGenerator:
             x_2, y_2 = coord2
             dx = x_2 - x_1
             dy = y_2 - y_1
-            coord_path += self.get_coord(tuple([dx, dy]))
+            coord_path += self.get_cardinal(tuple([dx, dy]))
         try:
             with open(filename, "a") as file:
                 file.write(coord_path)
         except Exception as e:
             print(f"{e}")
 
-    def get_coord(self, coord: tuple) -> str:
+    def get_cardinal(self, coord: tuple) -> str:
         if coord == (0, -1):
             return "N"
         if coord == (0, 1):
@@ -463,3 +402,16 @@ class MazeGenerator:
             return "E"
         if coord == (-1, 0):
             return "W"
+
+    def set_cell_arrow_direction(self, path: list) -> None:
+        for coord1, coord2 in zip(path[1:-1], path[2:]):
+            x_1, y_1 = coord1
+            x_2, y_2 = coord2
+            dx = x_2 - x_1
+            dy = y_2 - y_1
+            self.grid[y_1][x_1].cardinal = self.get_cardinal(tuple([dx, dy]))
+           
+    
+    def select_arrow(self, cell: Cell, stack: List[Tuple[int, int]]) -> str:
+        pass
+
