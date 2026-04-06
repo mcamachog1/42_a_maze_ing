@@ -45,6 +45,20 @@ class CellColor(Enum):
     BG_BRIGHT_WHITE = '\033[107m'
 
 
+
+class CellBrightColor(Enum):
+    # Add background color with text color for full color cell
+    BRIGHT_BLACK = '\033[90m' + '\033[100m'
+    BRIGHT_RED = '\033[91m' + '\033[101m'
+    BRIGHT_GREEN = '\033[92m' + '\033[102m'
+    BRIGHT_YELLOW = '\033[93m' + '\033[103m'
+    BRIGHT_BLUE = '\033[94m' + '\033[104m'
+    BRIGHT_MAGENTA = '\033[95m' + '\033[105m'
+    BRIGHT_CYAN = '\033[96m' + '\033[106m'
+    BRIGHT_WHITE = '\033[97m' + '\033[107m'
+
+   
+
 class Cell:
     def __init__(self, x: int, y: int) -> None:
         self.north = True
@@ -69,10 +83,18 @@ class Cell:
 
 class MazeGenerator:
     IMPERFECTION_ATTEMPTS: int = 3
-    EXTERNAL_WALL_COLOR = CellColor.BG_BRIGHT_YELLOW.value
+    # WALL_COLORS = CellColor.BG_BRIGHT_YELLOW.value
+
     END_COLOR = '\033[0m'
+    BOLD = '\033[1m'    
+
     BG_COLORS: str = '\033[30m'
-    WALL_COLORS: str = random.choice(list(CellColor)).value
+    # BG_COLORS: str = random.choice(list(CellColor)).value
+    WALL_COLORS: str = random.choice(list(CellBrightColor)).value
+    COLOR_42 = CellColor.BG_BRIGHT_WHITE.value
+    COLOR_ENTRY = CellColor.BG_BRIGHT_MAGENTA.value + BOLD
+    COLOR_EXIT = CellColor.BG_BRIGHT_GREEN.value + BOLD
+
     UP_ARROW = '\u2934'
     DOWN_ARROW = '\u2935'
     LEFT_ARROW = '\u21E6'
@@ -94,7 +116,7 @@ class MazeGenerator:
     
     @classmethod
     def change_color(cls):
-        cls.WALL_COLORS = random.choice(list(CellColor)).value
+        cls.WALL_COLORS = random.choice(list(CellBrightColor)).value
 
     def format_output_hexa_file(self) -> str:
         output: str = ""
@@ -118,13 +140,16 @@ class MazeGenerator:
             print(f"Error: IOError. Can not write file '{filename}' {error}", file=sys.stderr)
         except Exception as error:
             print(f"Error: {error}", file=sys.stderr)
-        try:
-            with open(filename, "a") as file:
-                file.write(self.add_path_to_file(path, filename))
-        except IOError as error:
-            print(f"Error: IOError. Can not write file '{filename}' {error}", file=sys.stderr)
-        except Exception as error:
-            print(f"Error: {error}", file=sys.stderr)
+        
+        self.add_path_to_file(path, filename)
+
+        # try:
+        #     with open(filename, "a") as file:
+        #         file.write(self.add_path_to_file(path, filename))
+        # except IOError as error:
+        #     print(f"Error: IOError. Can not write file '{filename}' {error}", file=sys.stderr)
+        # except Exception as error:
+        #     print(f"Error: {error}", file=sys.stderr)
 
     @staticmethod
     def remove_wall(current: Cell, neighbor: Cell):
@@ -225,7 +250,7 @@ class MazeGenerator:
             self.close_cell_walls(self.grid[cy - i][cx + 3])
 
     def print_maze_ascii(self, stack: Optional[List[Tuple]] = None):
-        def in_stack(cell: Cell, stack: List[Tuple]) -> str:
+        def in_stack(cell: Cell, stack: Optional[List[Tuple]] = None) -> str:
             coord: Tuple = (cell.x, cell.y)
             if stack is None:
                 return self.BG_COLORS + "   " + self.END_COLOR                
@@ -234,9 +259,9 @@ class MazeGenerator:
             coord_entry: Tuple = self.entry # stack[0]
             coord_exit: Tuple = self.exit # stack[len(stack) - 1]
             if coord == coord_entry:
-                return '\033[44m' + " B " + self.END_COLOR
+                return self.COLOR_ENTRY + " B " + self.END_COLOR
             if coord == coord_exit:
-                return '\033[44m' + " E " + self.END_COLOR
+                return self.COLOR_EXIT + " E " + self.END_COLOR
             if coord in stack:
                 if cell.cardinal == "N":
                     return '\033[37m' + " " + self.UP_ARROW + " " + self.END_COLOR
@@ -255,36 +280,36 @@ class MazeGenerator:
         height = self.height
         width = self.width
         for y in range(height):
-            line_n = self.EXTERNAL_WALL_COLOR + " " + self.END_COLOR
-            line_s = self.EXTERNAL_WALL_COLOR + " " + self.END_COLOR
+            line_n = self.WALL_COLORS + " " + self.END_COLOR
+            line_s = self.WALL_COLORS + " " + self.END_COLOR
             line_e = ""
             for x in range(width):
                 cell = self.grid[y][x]
-                line_n += self.EXTERNAL_WALL_COLOR + "---" + self.END_COLOR if cell.north else in_stack(cell, stack)
-                line_n += self.EXTERNAL_WALL_COLOR + " " + self.END_COLOR
+                line_n += self.WALL_COLORS + "---" + self.END_COLOR if cell.north else in_stack(cell, stack)
+                line_n += self.WALL_COLORS + " " + self.END_COLOR
                 if x == 0:
-                    line_e += self.EXTERNAL_WALL_COLOR + "|" + self.END_COLOR + in_stack(cell, stack) if cell.west else in_stack(cell, stack)
+                    line_e += self.WALL_COLORS + "|" + self.END_COLOR + in_stack(cell, stack) if cell.west else in_stack(cell, stack)
                 else:
                     if cell.x == self.entry[0] and cell.y == self.entry[1]:
-                        line_e += self.WALL_COLORS + '\033[1m' + " B " + self.END_COLOR
+                        line_e += self.COLOR_ENTRY  + " B " + self.END_COLOR
                     elif cell.x == self.exit[0] and cell.y == self.exit[1]:
-                        line_e += self.WALL_COLORS + " E " + self.END_COLOR                    
+                        line_e += self.COLOR_EXIT + " E " + self.END_COLOR                    
                     elif cell.is_42:
-                        line_e += self.EXTERNAL_WALL_COLOR + " # " + self.END_COLOR
+                        line_e += self.COLOR_42 + " # " + self.END_COLOR
                     else:    
                         line_e += in_stack(cell, stack)
                 if x < width - 1:
                     line_e += self.WALL_COLORS + "|" + self.END_COLOR if cell.east else self.BG_COLORS + " " + self.END_COLOR               
                 else:
-                    line_e += self.EXTERNAL_WALL_COLOR + "|" + self.END_COLOR if cell.east else self.BG_COLORS + " " + self.END_COLOR
+                    line_e += self.WALL_COLORS + "|" + self.END_COLOR if cell.east else self.BG_COLORS + " " + self.END_COLOR
                 if y < height - 1:
                     line_s += self.WALL_COLORS + "---" + self.END_COLOR if cell.south else self.BG_COLORS + "   " + self.END_COLOR
                 else:
-                    line_s += self.EXTERNAL_WALL_COLOR + "---" + self.END_COLOR if cell.south else self.BG_COLORS + "   " + self.END_COLOR
+                    line_s += self.WALL_COLORS + "---" + self.END_COLOR if cell.south else self.BG_COLORS + "   " + self.END_COLOR
                 if x < width - 1 and y < height - 1:
                     line_s += self.WALL_COLORS + " " + self.END_COLOR
                 else:
-                    line_s += self.EXTERNAL_WALL_COLOR + " " + self.END_COLOR
+                    line_s += self.WALL_COLORS + " " + self.END_COLOR
             if y == 0:
                 print(line_n)           
             print(line_e)
@@ -370,7 +395,7 @@ class MazeGenerator:
                 paths[n] = current_coords
                 cells_coords.append(n)
         
-        path: List[Tuples[int, int]] = []
+        path: List[Tuple[int, int]] = []
         path.append(current_coords)
         while current_coords != init_coords:
             current_coords = paths[current_coords]
@@ -414,4 +439,3 @@ class MazeGenerator:
     
     def select_arrow(self, cell: Cell, stack: List[Tuple[int, int]]) -> str:
         pass
-
