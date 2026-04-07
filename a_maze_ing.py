@@ -3,8 +3,8 @@
 from typing import List, Dict, Any, Tuple,  Optional, Union
 import sys
 from MazeGenerator import MazeGenerator
-from load_maze import read_maze_from_file
 import os
+from maze_print import print_maze_ascii, get_color, change_color
 
 
 def main() -> None:
@@ -82,9 +82,9 @@ def main() -> None:
         try:
             if first:
                 if flag == 0:
-                    maze.print_maze_ascii()
+                    print_maze_ascii(maze)
                 elif path:
-                    maze.print_maze_ascii(path)
+                    print_maze_ascii(maze, path)
                 first = False
             n_options = [1, 2, 3, 4]
             print("Interface with menu options:")
@@ -102,7 +102,7 @@ def main() -> None:
             path = maze.find_best_path(config["ENTRY"], config["EXIT"])
             maze.create_output_hexa_file(path, config["OUTPUT_FILE"])
             os.system("clear")
-            maze.print_maze_ascii()
+            print_maze_ascii(maze)
             flag = 0
         elif options == 2:
             option_2 += 1
@@ -111,21 +111,21 @@ def main() -> None:
             #     maze.add_path_to_file(path, config["OUTPUT_FILE"])
             if option_2  % 2 != 0:
                 os.system("clear")
-                maze.print_maze_ascii(path)
+                print_maze_ascii(maze, path)
                 flag = 1
             else:
                 os.system("clear")
-                maze.print_maze_ascii()
+                print_maze_ascii(maze)
                 flag = 0
         elif options == 3:
-            color = maze.WALL_COLORS
-            while maze.WALL_COLORS == color:
-                maze.change_color()
+            color = get_color()
+            while change_color() == color:
+                continue
             os.system("clear")
             if flag == 0:
-                maze.print_maze_ascii()
+                print_maze_ascii(maze)
             elif path:
-                maze.print_maze_ascii(path)
+                print_maze_ascii(maze, path)
         elif options == 4:
             os.system("clear")
             sys.exit()

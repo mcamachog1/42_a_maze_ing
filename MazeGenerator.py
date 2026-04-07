@@ -117,7 +117,7 @@ class MazeGenerator:
             [Cell(x, y) for x in range(self.width)]
             for y in range(self.height)
         ]
-        self.seed = config.get("SEED", None)
+        self.seed = config.get("SEED", None) or None
     
     @classmethod
     def change_color(cls):
