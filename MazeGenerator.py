@@ -5,6 +5,25 @@ from typing import List, Dict, Any, Tuple,  Optional, Union, Deque
 import sys
 
 
+class FortyTwoColor(Enum):
+    #BG_VIVID_RED     = '\033[48;2;220;0;0m\033[97m'   # vermelho vivo, texto branco
+    BG_VIVID_ORANGE  = '\033[48;2;255;140;0m\033[30m' # laranja vivo, texto preto
+    #BG_VIVID_MAGENTA = '\033[48;2;220;0;220m\033[97m' # magenta, texto branco
+
+
+class WallColor(Enum):
+    BG_DEEP_BLACK   = '\033[48;2;10;10;10m'   # preto quase total
+    BG_DEEP_RED     = '\033[48;2;80;0;0m'     # vermelho muito escuro
+    BG_DEEP_BLUE    = '\033[48;2;0;0;80m'     # azul profundo
+    #BG_DEEP_GREEN   = '\033[48;2;0;80;0m'     # verde profundo
+    BG_DEEP_PURPLE  = '\033[48;2;50;0;50m'    # roxo escuro
+    #BG_DEEP_BROWN   = '\033[48;2;80;40;0m'    # marrom escuro
+
+class BackgroundColor(Enum):
+    BG_SOFT_BEIGE      = '\033[48;2;245;245;220m' + '\033[30m'  # path: texto preto sobre fundo bege suave
+    #BG_SOFT_YELLOW     = '\033[103m' + '\033[30m'                # path: texto preto sobre fundo amarelo suave
+    BG_SOFT_CYAN       = '\033[106m' + '\033[30m'                # path: texto preto sobre fundo ciano suave
+    
 class CellColor(Enum):
 # Reset
     # Texto (foreground)
@@ -71,12 +90,21 @@ class MazeGenerator:
     IMPERFECTION_ATTEMPTS: int = 3
     EXTERNAL_WALL_COLOR = CellColor.BG_BRIGHT_YELLOW.value
     END_COLOR = '\033[0m'
-    BG_COLORS: str = '\033[30m'
-    WALL_COLORS: str = random.choice(list(CellColor)).value
-    UP_ARROW = '\u2934'
-    DOWN_ARROW = '\u2935'
-    LEFT_ARROW = '\u21E6'
-    RIGHT_ARROW = '\u21E8'
+    BG_COLORS: str = random.choice(list(BackgroundColor)).value
+    WALL_COLORS: str = random.choice(list(WallColor)).value
+    FORTY_TWO: str = random.choice(list(FortyTwoColor)).value
+    ENTRY_COLOR = '\033[30m' + '\033[105m'
+    EXIT_COLOR = '\033[30m' + '\033[102m'
+    BOLD = '\033[1m'
+    # UP_ARROW = '\u2934'
+    # DOWN_ARROW = '\u2935'
+    # LEFT_ARROW = '\u21E6'
+    # RIGHT_ARROW = '\u21E8'
+    WALL_EAST_WEST = "  "
+    WALL_SOUTH_NORTH = "   "
+    BEGIN = " B "
+    END = " E "
+
 
     def __init__(self, config: Dict[str, Any]):
         self.width = config["WIDTH"]
@@ -89,12 +117,11 @@ class MazeGenerator:
             [Cell(x, y) for x in range(self.width)]
             for y in range(self.height)
         ]
-        seed = config.get("SEED", None)
-        random.seed(seed)
+        self.seed = config.get("SEED", None)
     
     @classmethod
     def change_color(cls):
-        cls.WALL_COLORS = random.choice(list(CellColor)).value
+        cls.WALL_COLORS = random.choice(list(WallColor)).value
 
     def format_output_hexa_file(self) -> str:
         output: str = ""
@@ -145,7 +172,9 @@ class MazeGenerator:
             neighbor.south = False
 
     def generate_maze(self, start_x: int =0, start_y: int =0):
-        stack: List[Tuple] = []
+        if self.seed is not None:
+            random.seed(self.seed)
+        stack: List[Tuple[int, int]] = []
         # If exist a maze, close all walls and reset visited
         for line in self.grid:
             for cell in line:
@@ -155,6 +184,7 @@ class MazeGenerator:
                 cell.west = True
                 cell.visited = False
                 cell.best_path = False
+                cell.cardinal = ""
         
         current: Cell = self.grid[start_y][start_x]
         current.visited = True
@@ -225,73 +255,69 @@ class MazeGenerator:
             self.close_cell_walls(self.grid[cy - i][cx + 3])
 
     def print_maze_ascii(self, stack: Optional[List[Tuple]] = None):
-        def in_stack(cell: Cell, stack: List[Tuple]) -> str:
+        def in_stack(cell: Cell, stack: Optional[List[Tuple]] = None) -> str:
             coord: Tuple = (cell.x, cell.y)
-            if stack is None:
-                return self.BG_COLORS + "   " + self.END_COLOR                
-            if len(stack) == 0:
-                return self.BG_COLORS + "   " + self.END_COLOR
             coord_entry: Tuple = self.entry # stack[0]
             coord_exit: Tuple = self.exit # stack[len(stack) - 1]
             if coord == coord_entry:
-                return '\033[44m' + " B " + self.END_COLOR
+                return self.ENTRY_COLOR + self.BOLD + self.BEGIN + self.END_COLOR
             if coord == coord_exit:
-                return '\033[44m' + " E " + self.END_COLOR
+                return self.EXIT_COLOR + self.BOLD + self.END + self.END_COLOR
+            if stack is None:
+                return self.BG_COLORS + self.WALL_SOUTH_NORTH + self.END_COLOR                
+            if len(stack) == 0:
+                return self.BG_COLORS + self.WALL_SOUTH_NORTH + self.END_COLOR
+
             if coord in stack:
-                if cell.cardinal == "N":
-                    return '\033[37m' + " " + self.UP_ARROW + " " + self.END_COLOR
-                if cell.cardinal == "S":
-                    return '\033[37m' + " " + self.DOWN_ARROW + " " + self.END_COLOR
-                if cell.cardinal == "E":
-                    return '\033[37m' + " " + self.RIGHT_ARROW + " " + self.END_COLOR
-                if cell.cardinal == "W":
-                    return '\033[37m' + " " + self.LEFT_ARROW + " " + self.END_COLOR                    
-                else:
-                    return self.BG_COLORS + " " + "*" + " " + self.END_COLOR
+                return self.BG_COLORS + " " + self.BOLD + self.select_arrow(cell, stack) + " " + self.END_COLOR
             else:
-                return self.BG_COLORS + "   " + self.END_COLOR
+                return self.BG_COLORS + self.WALL_SOUTH_NORTH  + self.BOLD + self.END_COLOR
         
         steps: int = 0
         height = self.height
         width = self.width
         for y in range(height):
-            line_n = self.EXTERNAL_WALL_COLOR + " " + self.END_COLOR
-            line_s = self.EXTERNAL_WALL_COLOR + " " + self.END_COLOR
+            line_n = self.WALL_COLORS + self.WALL_EAST_WEST + self.END_COLOR
+            line_s = self.WALL_COLORS + self.WALL_EAST_WEST + self.END_COLOR
             line_e = ""
             for x in range(width):
                 cell = self.grid[y][x]
-                line_n += self.EXTERNAL_WALL_COLOR + "---" + self.END_COLOR if cell.north else in_stack(cell, stack)
-                line_n += self.EXTERNAL_WALL_COLOR + " " + self.END_COLOR
+                line_n += self.WALL_COLORS + self.WALL_SOUTH_NORTH + self.END_COLOR if cell.north else in_stack(cell, stack)
+                line_n += self.WALL_COLORS + self.WALL_EAST_WEST + self.END_COLOR
                 if x == 0:
-                    line_e += self.EXTERNAL_WALL_COLOR + "|" + self.END_COLOR + in_stack(cell, stack) if cell.west else in_stack(cell, stack)
+                    if cell.west:
+                        line_e += self.WALL_COLORS + self.WALL_EAST_WEST + self.END_COLOR
+                    else:
+                        line_e += self.BG_COLORS + self.WALL_EAST_WEST + self.END_COLOR
+                    line_e += in_stack(cell, stack)
                 else:
                     if cell.x == self.entry[0] and cell.y == self.entry[1]:
-                        line_e += self.WALL_COLORS + '\033[1m' + " B " + self.END_COLOR
+                        line_e += self.ENTRY_COLOR + self.BOLD + " B " + self.END_COLOR
                     elif cell.x == self.exit[0] and cell.y == self.exit[1]:
-                        line_e += self.WALL_COLORS + " E " + self.END_COLOR                    
+                        line_e += self.EXIT_COLOR + self.BOLD + " E " + self.END_COLOR                    
                     elif cell.is_42:
-                        line_e += self.EXTERNAL_WALL_COLOR + " # " + self.END_COLOR
+                        line_e += self.FORTY_TWO + self.WALL_SOUTH_NORTH + self.END_COLOR
                     else:    
                         line_e += in_stack(cell, stack)
                 if x < width - 1:
-                    line_e += self.WALL_COLORS + "|" + self.END_COLOR if cell.east else self.BG_COLORS + " " + self.END_COLOR               
+                    line_e += self.WALL_COLORS + self.WALL_EAST_WEST + self.END_COLOR if cell.east else self.BG_COLORS + self.WALL_EAST_WEST + self.END_COLOR               
                 else:
-                    line_e += self.EXTERNAL_WALL_COLOR + "|" + self.END_COLOR if cell.east else self.BG_COLORS + " " + self.END_COLOR
+                    line_e += self.WALL_COLORS + self.WALL_EAST_WEST + self.END_COLOR if cell.east else self.BG_COLORS + self.WALL_EAST_WEST + self.END_COLOR
                 if y < height - 1:
-                    line_s += self.WALL_COLORS + "---" + self.END_COLOR if cell.south else self.BG_COLORS + "   " + self.END_COLOR
+                    line_s += self.WALL_COLORS + self.WALL_SOUTH_NORTH + self.END_COLOR if cell.south else self.BG_COLORS + self.WALL_SOUTH_NORTH + self.END_COLOR
                 else:
-                    line_s += self.EXTERNAL_WALL_COLOR + "---" + self.END_COLOR if cell.south else self.BG_COLORS + "   " + self.END_COLOR
+                    line_s += self.WALL_COLORS + self.WALL_SOUTH_NORTH + self.END_COLOR if cell.south else self.BG_COLORS + self.WALL_SOUTH_NORTH + self.END_COLOR
                 if x < width - 1 and y < height - 1:
-                    line_s += self.WALL_COLORS + " " + self.END_COLOR
+                    line_s += self.WALL_COLORS + self.WALL_EAST_WEST + self.END_COLOR
                 else:
-                    line_s += self.EXTERNAL_WALL_COLOR + " " + self.END_COLOR
+                    line_s += self.WALL_COLORS + self.WALL_EAST_WEST + self.END_COLOR
             if y == 0:
                 print(line_n)           
             print(line_e)
             print(line_s)
         if stack is not None:
             steps = len(stack)
-        print(f"Total steps: {steps}")
+
 
     def make_imperfect(self, path: Optional[List[Tuple]] = None) -> None:
         for _ in range(self.IMPERFECTION_ATTEMPTS):
@@ -336,7 +362,6 @@ class MazeGenerator:
                 elif dy == -1 and current.north:
                     self.remove_wall(current, neighbor)
                     break
-            print(f"x={x}, y={y}, nx={nx}, ny={ny}")
 
     def find_best_path(
             self,
@@ -370,7 +395,7 @@ class MazeGenerator:
                 paths[n] = current_coords
                 cells_coords.append(n)
         
-        path: List[Tuples[int, int]] = []
+        path: List[Tuple[int, int]] = []
         path.append(current_coords)
         while current_coords != init_coords:
             current_coords = paths[current_coords]
@@ -379,7 +404,7 @@ class MazeGenerator:
         self.set_cell_arrow_direction(path)
         return path
             
-    def add_path_to_file(self, path: list, filename: str) -> list:
+    def add_path_to_file(self, path: list, filename: str) -> str:
         coord_path = "\n"
         for coord1, coord2 in zip(path[:-1], path[1:]):
             x_1, y_1 = coord1
@@ -387,11 +412,12 @@ class MazeGenerator:
             dx = x_2 - x_1
             dy = y_2 - y_1
             coord_path += self.get_cardinal(tuple([dx, dy]))
-        try:
-            with open(filename, "a") as file:
-                file.write(coord_path)
-        except Exception as e:
-            print(f"{e}")
+        return coord_path
+        # try:
+        #     with open(filename, "a") as file:
+        #         file.write(coord_path)
+        # except Exception as e:
+        #     print(f"{e}")
 
     def get_cardinal(self, coord: tuple) -> str:
         if coord == (0, -1):
@@ -413,5 +439,43 @@ class MazeGenerator:
            
     
     def select_arrow(self, cell: Cell, stack: List[Tuple[int, int]]) -> str:
-        pass
-
+        current = tuple([cell.x, cell.y])
+        prev_position = stack.index(current) - 1
+        next_position = stack.index(current) + 1
+        previous_coord = stack[prev_position]
+        next_coord = stack[next_position]
+        px, py = previous_coord
+        nx, ny = next_coord
+        dx = nx - px
+        dy = ny - py
+        difference = tuple([dx, dy])
+        if difference == tuple([1, 1]):
+            if cell.cardinal == "E":
+                return "\u2BA1"
+            if cell.cardinal == "S":
+                return "\u2BA7"            
+        if difference == tuple([1, -1]):
+            if cell.cardinal == "N":
+                return "\u2BA5"
+            if cell.cardinal == "E":
+                return "\u2BA3"  
+        if difference == tuple([-1, -1]):
+            if cell.cardinal == "W":
+                return "\u2BA2"
+            if cell.cardinal == "N":
+                return "\u2BA4"  
+        if difference == tuple([-1, 1]):
+            if cell.cardinal == "S":
+                return "\u2BA6"
+            if cell.cardinal == "W":
+                return "\u2BA0"            
+        if difference == tuple([0, 2]): # v
+            return "\u2B63" 
+        if difference == tuple([0, -2]):# ^
+            return "\u2B61" 
+        if difference == tuple([2, 0]):# >
+            return "\u2B62" 
+        if difference == tuple([-2, 0]):# <
+            return "\u2B60"
+        else:
+            return "*"

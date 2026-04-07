@@ -75,11 +75,16 @@ def main() -> None:
     os.system("clear")
     #maze.print_maze_ascii()
     flag = 0
-    first = True
+    first = True 
+    if config["WIDTH"] < 9 or config["HEIGHT"] < 7:
+        print("“42” pattern is omitted in case Width is lower than 9 and Height is lower than 7")
     while True:
         try:
             if first:
-                maze.print_maze_ascii()
+                if flag == 0:
+                    maze.print_maze_ascii()
+                elif path:
+                    maze.print_maze_ascii(path)
                 first = False
             n_options = [1, 2, 3, 4]
             print("Interface with menu options:")
@@ -113,7 +118,9 @@ def main() -> None:
                 maze.print_maze_ascii()
                 flag = 0
         elif options == 3:
-            maze.change_color()
+            color = maze.WALL_COLORS
+            while maze.WALL_COLORS == color:
+                maze.change_color()
             os.system("clear")
             if flag == 0:
                 maze.print_maze_ascii()
