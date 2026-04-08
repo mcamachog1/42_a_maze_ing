@@ -1,8 +1,5 @@
-0) Function for select arrows 8 (corners) 4 (directions)
-1) Mudar ENTER (input) por getch
+
 2) choose better colors (bg and foreground)
-3)Walls all of the same color
-4)Change the arrows
+
 5)ReadME
 6)Docstrings in functions and classes
-7) Package (maze gen)

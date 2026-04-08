@@ -8,6 +8,7 @@ install:
 	@python3 -m venv $(VENV)
 	@$(PIP) install --upgrade pip
 	@$(PIP) install -r requirements.txt
+	@$(PIP) install mazegen-1.0.0-py3-none-any.whl
 
 run:
 	@$(PYTHON) a_maze_ing.py config.txt

@@ -1,0 +1,9 @@
+[project]
+name = "mazegen"
+version = "1.0.0"
+description = "Maze generator"
+authors = [{name="you"}]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

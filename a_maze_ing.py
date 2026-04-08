@@ -1,81 +1,41 @@
 #!/usr/bin/env python3
 
-from typing import List, Dict, Any, Tuple,  Optional, Union
+from typing import List, Dict, Any, Tuple
 import sys
-from MazeGenerator import MazeGenerator
+import mazegen
 import os
-from maze_print import print_maze_ascii, get_color, change_color
+from src.maze_print import print_maze_ascii, get_color, change_color
 
 
 def main() -> None:
     if len(sys.argv) != 2:
         print("Usage:  python3 a_maze_ing.py <config.txt>", file=sys.stderr)
         sys.exit()
+
     config: Dict[str, Any] = read_config_file(sys.argv[1])
+    config["CONFIG_FILE"] = sys.argv[1]
     convert_config_values(config)
-    maze = MazeGenerator(config)
+    maze = mazegen.MazeGenerator(config)
     if config["WIDTH"] < 9 or config["HEIGHT"] < 7:
         print("“42” pattern is omitted in case Width is lower than 9 and Height is lower than 7", file=sys.stderr)
     else:
         maze.make_42()
     begin_x, begin_y = config["ENTRY"]
     exit_x, exit_y = config["EXIT"]
-    # print(f"Begin = {maze.grid[begin_y][begin_x].is_42}")
-    # print(f"Exit = {maze.grid[exit_y][exit_x].is_42}")
     if maze.grid[begin_y][begin_x].is_42 or maze.grid[exit_y][exit_x].is_42:
-        print("Entry or Exit are invalid cells, position belongs to 42", file=sys.stderr)
+        cells_42: List[Tuple[int, int]] = maze.get_42_cells()
+        print(f"Entry or Exit are invalid cells, position belongs to 42\nMust be different than: {cells_42}", file=sys.stderr)
         sys.exit()
-    # maze.generate_maze()
-    # maze.print_maze_ascii()
-    # maze.create_output_hexa_file(config["OUTPUT_FILE"])
-    # path_1 = []
-    # path_2 = []
 
-    # # Load maze
-    # # new_maze = read_maze_from_file(config["OUTPUT_FILE"])
-
-    # start_x, start_y = config["ENTRY"]
-    # exit_x, exit_y = config["EXIT"]
-
-    # # maze.print_maze_ascii([(0,0), (1, 1)])
-    # # Get 1st solution
-    # path_1 = maze.find_first_solution()
-    
-    # # If PERFECT is False make imperfect
-    # if not config["PERFECT"]:
-    #     maze.make_imperfect(path_1)
-    #     print("This maze IS NOT PERFECT")
-    # else:
-    #     print("This maze IS PERFECT")
-
-    # # Print maze with 1st solution
-    # print("Try 1st path:")
-    # #maze.print_maze_ascii(path_1)
-
-    # # If maze is imperfect get 2nd solution
-    # if not config["PERFECT"]:
-    #     path_2 = maze.find_second_solution(start_x, start_y, exit_x, exit_y)
-    #     print("Try 2nd path:")
-    #     maze.print_maze_ascii(path_2)
-    
-    # # Get de best path (shorter one)
-    # print(f"One of the shortest path is:\n")
-    # path = maze.find_best_path(config["ENTRY"], config["EXIT"])
-    # maze.add_path_to_file(path, config["OUTPUT_FILE"])
-    #maze.print_maze_ascii()
-    
-# *******************
-    #print("Interface with menu options:")
-
+    print(config)
     path: List[Tuple[int, int]] = []
     option_2: int = 0
     maze.generate_maze()
     path = maze.find_best_path(config["ENTRY"], config["EXIT"])
     maze.create_output_hexa_file(path, config["OUTPUT_FILE"])
     os.system("clear")
-    #maze.print_maze_ascii()
     flag = 0
-    first = True 
+    first = True
     if config["WIDTH"] < 9 or config["HEIGHT"] < 7:
         print("“42” pattern is omitted in case Width is lower than 9 and Height is lower than 7")
     while True:
@@ -106,10 +66,7 @@ def main() -> None:
             flag = 0
         elif options == 2:
             option_2 += 1
-            # if not path:
-            #     path = maze.find_best_path(config["ENTRY"], config["EXIT"])
-            #     maze.add_path_to_file(path, config["OUTPUT_FILE"])
-            if option_2  % 2 != 0:
+            if option_2 % 2 != 0:
                 os.system("clear")
                 print_maze_ascii(maze, path)
                 flag = 1
@@ -130,16 +87,12 @@ def main() -> None:
             os.system("clear")
             sys.exit()
 
-# *******************
-
-
-
 
 def read_config_file(filename: str) -> Dict[str, Any]:
     config: Dict[str, Any] = {}
     try:
         mandatory_keys: List[str] = [
-            "WIDTH", 
+            "WIDTH",
             "HEIGHT",
             "ENTRY",
             "EXIT",
@@ -157,9 +110,11 @@ def read_config_file(filename: str) -> Dict[str, Any]:
                 key, value = line.split("=")
                 if key not in all_keys:
                     raise ValueError(f"Invalid key '{key}'.")
+                if value == "None" or value == "":
+                    value = None
                 config[key] = value
             for key in mandatory_keys:
-                if key not in config:
+                if key not in config or config[key] is None:
                     raise ValueError(f"'{key}' is missing.")
 
     except FileNotFoundError:
@@ -189,7 +144,6 @@ def is_format_output_file_name(output_file: str) -> bool:
 
 
 def convert_config_values(config: Dict[str, Any]) -> None:
-    #transformar width em int
     try:
         x: int
         y: int
@@ -199,8 +153,6 @@ def convert_config_values(config: Dict[str, Any]) -> None:
         config["HEIGHT"] = int(config["HEIGHT"])
         if config["WIDTH"] < 0 or config["HEIGHT"] < 0:
             raise ValueError("Width and Height must be positive")
-        #if config["WIDTH"] < 9 or config["HEIGHT"] < 7:
-        #    raise ValueError("Width must be at least 9 and Height must be at least 7")        
         if "," not in config["ENTRY"] or "," not in config["EXIT"]:
             raise ValueError("'ENTRY' and 'EXIT' must have only two values separated by ','")
         x, y = config["ENTRY"].split(",")
@@ -219,6 +171,8 @@ def convert_config_values(config: Dict[str, Any]) -> None:
         if not is_format_output_file_name(config["OUTPUT_FILE"]):
             raise ValueError("'OUTPUT_FILE' must be '.txt' file")
         config["OUTPUT_FILE"] = config["OUTPUT_FILE"].lower()
+        if config["CONFIG_FILE"] == config["OUTPUT_FILE"]:
+            raise ValueError(f"OUTPUT_FILE must not be '{config['CONFIG_FILE']}'")
     except ValueError as error:
         value = error.args[0].split(":")[-1].strip()
         print(f"Invalid value: {value}", file=sys.stderr)
