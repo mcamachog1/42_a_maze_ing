@@ -56,24 +56,35 @@ class MazeGenerator:
         output += str(exit_x) + "," + str(exit_y)
         return output
 
-    def create_output_hexa_file(self, path: List[Tuple[int, int]], filename: str) -> None:
+    def create_output_hexa_file(
+        self,
+        path: List[Tuple[int, int]],
+        filename: str
+    ) -> None:
         try:
             with open(filename, "w") as file:
                 file.write(self.format_output_hexa_file())
         except IOError as error:
-            print(f"Error: IOError. Can not write file '{filename}' {error}", file=sys.stderr)
+            print(
+                "Error: IOError. Can not write file "
+                f"'{filename}' {error}",
+                file=sys.stderr
+            )
         except Exception as error:
             print(f"Error: {error}", file=sys.stderr)
         try:
             with open(filename, "a") as file:
                 file.write(self.add_path_to_file(path, filename))
         except IOError as error:
-            print(f"Error: IOError. Can not write file '{filename}' {error}", file=sys.stderr)
+            print(
+                f"Error: IOError. Can not write file '{filename}' {error}",
+                file=sys.stderr
+            )
         except Exception as error:
             print(f"Error: {error}", file=sys.stderr)
 
     @staticmethod
-    def remove_wall(current: Cell, neighbor: Cell):
+    def remove_wall(current: Cell, neighbor: Cell) -> None:
         dx: int = neighbor.x - current.x
         dy: int = neighbor.y - current.y
 
@@ -90,7 +101,7 @@ class MazeGenerator:
             current.north = False
             neighbor.south = False
 
-    def generate_maze(self, start_x: int = 0, start_y: int = 0):
+    def generate_maze(self, start_x: int = 0, start_y: int = 0) -> None:
         if self.seed is not None:
             random.seed(self.seed)
         stack: List[Tuple[int, int]] = []
@@ -114,13 +125,25 @@ class MazeGenerator:
             x, y = stack[-1]
             current = self.grid[y][x]
             neighbors = []
-            if y > 0 and not self.grid[y-1][x].visited and not self.grid[y-1][x].is_42:
+            if (
+                y > 0 and not self.grid[y-1][x].visited
+                and not self.grid[y-1][x].is_42
+            ):
                 neighbors.append((x, y-1))
-            if y < self.height-1 and not self.grid[y+1][x].visited and not self.grid[y+1][x].is_42:
+            if (
+                y < self.height-1 and not self.grid[y+1][x].visited
+                and not self.grid[y+1][x].is_42
+            ):
                 neighbors.append((x, y+1))
-            if x > 0 and not self.grid[y][x-1].visited and not self.grid[y][x-1].is_42:
+            if (
+                x > 0 and not self.grid[y][x-1].visited
+                and not self.grid[y][x-1].is_42
+            ):
                 neighbors.append((x-1, y))
-            if x < self.width-1 and not self.grid[y][x+1].visited and not self.grid[y][x+1].is_42:
+            if (
+                x < self.width-1 and not self.grid[y][x+1].visited
+                and not self.grid[y][x+1].is_42
+            ):
                 neighbors.append((x+1, y))
 
             if neighbors:
@@ -147,7 +170,7 @@ class MazeGenerator:
         self.grid[y + 1][x].north = True
         self.grid[y - 1][x].south = True
 
-    def make_42(self):
+    def make_42(self) -> None:
         cx = self.width // 2
         cy = self.height // 2
         # Number 4 (column 1)
@@ -171,7 +194,7 @@ class MazeGenerator:
         for i in range(3):
             self.close_cell_walls(self.grid[cy - i][cx + 3])
 
-    def get_42_cells(self):
+    def get_42_cells(self) -> List[Tuple[int, int]]:
         cells_42: List[Tuple[int, int]] = []
         for line in self.grid:
             for cell in line:
@@ -179,7 +202,10 @@ class MazeGenerator:
                     cells_42.append((cell.x, cell.y))
         return cells_42
 
-    def make_imperfect(self, path: Optional[List[Tuple]] = None) -> None:
+    def make_imperfect(
+        self,
+        path: Optional[List[Tuple[int, int]]] = None
+    ) -> None:
         for _ in range(self.IMPERFECTION_ATTEMPTS):
             while True:
                 if path is not None:
@@ -197,7 +223,11 @@ class MazeGenerator:
                         (x-1, y),
                         (x+1, y),
                     ]
-                    if 0 <= nx < self.width and 0 <= ny < self.height and not self.grid[ny][nx].is_42
+                    if (
+                        0 <= nx < self.width
+                        and 0 <= ny < self.height
+                        and not self.grid[ny][nx].is_42
+                    )
                 ]
 
                 if not neighbors:
@@ -264,22 +294,21 @@ class MazeGenerator:
         self.set_cell_arrow_direction(path)
         return path
 
-    def add_path_to_file(self, path: list, filename: str) -> str:
+    def add_path_to_file(
+        self,
+        path: list[Tuple[int, int]],
+        filename: str
+    ) -> str:
         coord_path = "\n"
         for coord1, coord2 in zip(path[:-1], path[1:]):
             x_1, y_1 = coord1
             x_2, y_2 = coord2
             dx = x_2 - x_1
             dy = y_2 - y_1
-            coord_path += self.get_cardinal(tuple([dx, dy]))
+            coord_path += self.get_cardinal((dx, dy))
         return coord_path
-        # try:
-        #     with open(filename, "a") as file:
-        #         file.write(coord_path)
-        # except Exception as e:
-        #     print(f"{e}")
 
-    def get_cardinal(self, coord: tuple) -> str:
+    def get_cardinal(self, coord: Tuple[int, int]) -> str:
         if coord == (0, -1):
             return "N"
         if coord == (0, 1):
@@ -288,17 +317,19 @@ class MazeGenerator:
             return "E"
         if coord == (-1, 0):
             return "W"
+        else:
+            return ""
 
-    def set_cell_arrow_direction(self, path: list) -> None:
+    def set_cell_arrow_direction(self, path: list[Tuple[int, int]]) -> None:
         for coord1, coord2 in zip(path[1:-1], path[2:]):
             x_1, y_1 = coord1
             x_2, y_2 = coord2
             dx = x_2 - x_1
             dy = y_2 - y_1
-            self.grid[y_1][x_1].cardinal = self.get_cardinal(tuple([dx, dy]))
+            self.grid[y_1][x_1].cardinal = self.get_cardinal((dx, dy))
 
     def select_arrow(self, cell: Cell, stack: List[Tuple[int, int]]) -> str:
-        current = tuple([cell.x, cell.y])
+        current: Tuple[int, int] = (cell.x, cell.y)
         prev_position = stack.index(current) - 1
         next_position = stack.index(current) + 1
         previous_coord = stack[prev_position]
@@ -307,34 +338,34 @@ class MazeGenerator:
         nx, ny = next_coord
         dx = nx - px
         dy = ny - py
-        difference = tuple([dx, dy])
-        if difference == tuple([1, 1]):
+        difference: tuple[int, int] = (dx, dy)
+        if difference == (1, 1):
             if cell.cardinal == "E":
                 return "\u2BA1"
             if cell.cardinal == "S":
                 return "\u2BA7"
-        if difference == tuple([1, -1]):
+        if difference == (1, -1):
             if cell.cardinal == "N":
                 return "\u2BA5"
             if cell.cardinal == "E":
                 return "\u2BA3"
-        if difference == tuple([-1, -1]):
+        if difference == (-1, -1):
             if cell.cardinal == "W":
                 return "\u2BA2"
             if cell.cardinal == "N":
                 return "\u2BA4"
-        if difference == tuple([-1, 1]):
+        if difference == (-1, 1):
             if cell.cardinal == "S":
                 return "\u2BA6"
             if cell.cardinal == "W":
                 return "\u2BA0"
-        if difference == tuple([0, 2]):
+        if difference == (0, 2):
             return "\u2B63"
-        if difference == tuple([0, -2]):
+        if difference == (0, -2):
             return "\u2B61"
-        if difference == tuple([2, 0]):
+        if difference == (2, 0):
             return "\u2B62"
-        if difference == tuple([-2, 0]):
+        if difference == (-2, 0):
             return "\u2B60"
         else:
             return "*"

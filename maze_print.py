@@ -33,21 +33,27 @@ BEGIN = " B "
 END = " E "
 
 
-def change_color():
+def change_color() -> str:
     global WALL_COLORS
     WALL_COLORS = random.choice(list(WallColor)).value
     return WALL_COLORS
 
 
-def get_color():
+def get_color() -> str:
     return WALL_COLORS
 
 
-def print_maze_ascii(maze: mazegen.MazeGenerator, stack: Optional[List[Tuple]] = None) -> None:
-    def in_stack(cell: mazegen.Cell, stack: Optional[List[Tuple]] = None) -> str:
-        coord: Tuple = (cell.x, cell.y)
-        coord_entry: Tuple = maze.entry
-        coord_exit: Tuple = maze.exit
+def print_maze_ascii(
+    maze: mazegen.MazeGenerator,
+    stack: Optional[List[Tuple[int, int]]] = None
+) -> None:
+    def in_stack(
+        cell: mazegen.Cell,
+        stack: Optional[List[Tuple[int, int]]] = None
+    ) -> str:
+        coord: Tuple[int, int] = (cell.x, cell.y)
+        coord_entry: Tuple[int, int] = maze.entry
+        coord_exit: Tuple[int, int] = maze.exit
         if coord == coord_entry:
             return ENTRY_COLOR + BOLD + BEGIN + END_COLOR
         if coord == coord_exit:
@@ -58,7 +64,10 @@ def print_maze_ascii(maze: mazegen.MazeGenerator, stack: Optional[List[Tuple]] =
             return BG_COLORS + WALL_SOUTH_NORTH + END_COLOR
 
         if coord in stack:
-            return BG_COLORS + " " + BOLD + maze.select_arrow(cell, stack) + " " + END_COLOR
+            return (
+                BG_COLORS + " " + BOLD +
+                maze.select_arrow(cell, stack) + " " + END_COLOR
+            )
         else:
             return BG_COLORS + WALL_SOUTH_NORTH + BOLD + END_COLOR
     height = maze.height
@@ -69,7 +78,10 @@ def print_maze_ascii(maze: mazegen.MazeGenerator, stack: Optional[List[Tuple]] =
         line_e = ""
         for x in range(width):
             cell = maze.grid[y][x]
-            line_n += WALL_COLORS + WALL_SOUTH_NORTH + END_COLOR if cell.north else in_stack(cell, stack)
+            line_n += (
+                WALL_COLORS + WALL_SOUTH_NORTH + END_COLOR if cell.north
+                else in_stack(cell, stack)
+            )
             line_n += WALL_COLORS + WALL_EAST_WEST + END_COLOR
             if x == 0:
                 if cell.west:
@@ -87,13 +99,25 @@ def print_maze_ascii(maze: mazegen.MazeGenerator, stack: Optional[List[Tuple]] =
                 else:
                     line_e += in_stack(cell, stack)
             if x < width - 1:
-                line_e += WALL_COLORS + WALL_EAST_WEST + END_COLOR if cell.east else BG_COLORS + WALL_EAST_WEST + END_COLOR
+                line_e += (
+                    WALL_COLORS + WALL_EAST_WEST + END_COLOR
+                    if cell.east else BG_COLORS + WALL_EAST_WEST + END_COLOR
+                )
             else:
-                line_e += WALL_COLORS + WALL_EAST_WEST + END_COLOR if cell.east else BG_COLORS + WALL_EAST_WEST + END_COLOR
+                line_e += (
+                    WALL_COLORS + WALL_EAST_WEST + END_COLOR
+                    if cell.east else BG_COLORS + WALL_EAST_WEST + END_COLOR
+                )
             if y < height - 1:
-                line_s += WALL_COLORS + WALL_SOUTH_NORTH + END_COLOR if cell.south else BG_COLORS + WALL_SOUTH_NORTH + END_COLOR
+                line_s += (
+                    WALL_COLORS + WALL_SOUTH_NORTH + END_COLOR
+                    if cell.south else BG_COLORS + WALL_SOUTH_NORTH + END_COLOR
+                    )
             else:
-                line_s += WALL_COLORS + WALL_SOUTH_NORTH + END_COLOR if cell.south else BG_COLORS + WALL_SOUTH_NORTH + END_COLOR
+                line_s += (
+                    WALL_COLORS + WALL_SOUTH_NORTH + END_COLOR
+                    if cell.south else BG_COLORS + WALL_SOUTH_NORTH + END_COLOR
+                )
             if x < width - 1 and y < height - 1:
                 line_s += WALL_COLORS + WALL_EAST_WEST + END_COLOR
             else:

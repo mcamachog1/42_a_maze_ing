@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 import sys
 import mazegen
 import os
-from src.maze_print import print_maze_ascii, get_color, change_color
+from maze_print import print_maze_ascii, get_color, change_color
 
 
 def main() -> None:
@@ -17,14 +17,21 @@ def main() -> None:
     convert_config_values(config)
     maze = mazegen.MazeGenerator(config)
     if config["WIDTH"] < 9 or config["HEIGHT"] < 7:
-        print("“42” pattern is omitted in case Width is lower than 9 and Height is lower than 7", file=sys.stderr)
+        print(
+            "“42” pattern is omitted in case Width is lower "
+            "than 9 and Height is lower than 7",
+            file=sys.stderr
+        )
     else:
         maze.make_42()
     begin_x, begin_y = config["ENTRY"]
     exit_x, exit_y = config["EXIT"]
     if maze.grid[begin_y][begin_x].is_42 or maze.grid[exit_y][exit_x].is_42:
         cells_42: List[Tuple[int, int]] = maze.get_42_cells()
-        print(f"Entry or Exit are invalid cells, position belongs to 42\nMust be different than: {cells_42}", file=sys.stderr)
+        print(
+            "Entry or Exit are invalid cells, "
+            f"position belongs to 42\nMust be different than: {cells_42}",
+            file=sys.stderr)
         sys.exit()
 
     print(config)
@@ -37,7 +44,10 @@ def main() -> None:
     flag = 0
     first = True
     if config["WIDTH"] < 9 or config["HEIGHT"] < 7:
-        print("“42” pattern is omitted in case Width is lower than 9 and Height is lower than 7")
+        print(
+            "“42” pattern is omitted in case Width is "
+            "lower than 9 and Height is lower than 7"
+        )
     while True:
         try:
             if first:
@@ -48,7 +58,9 @@ def main() -> None:
                 first = False
             n_options = [1, 2, 3, 4]
             print("Interface with menu options:")
-            options = int(input("1: regen; 2: path; 3: color; 4: quit\n").strip().lower())
+            options = int(input(
+                "1: regen; 2: path; 3: color; 4: quit\n").strip().lower()
+            )
             if options not in n_options:
                 raise ValueError
         except ValueError:
@@ -111,8 +123,10 @@ def read_config_file(filename: str) -> Dict[str, Any]:
                 if key not in all_keys:
                     raise ValueError(f"Invalid key '{key}'.")
                 if value == "None" or value == "":
-                    value = None
-                config[key] = value
+                    value_opt: Optional[str] = None
+                else:
+                    value_opt = value
+                config[key] = value_opt
             for key in mandatory_keys:
                 if key not in config or config[key] is None:
                     raise ValueError(f"'{key}' is missing.")
@@ -124,7 +138,11 @@ def read_config_file(filename: str) -> Dict[str, Any]:
         print("RESPONSE: Archive deny access", file=sys.stderr)
         sys.exit()
     except ValueError as error:
-        print(f'RESPONSE: Incorrect config format. {error} Check "config.txt" file', file=sys.stderr)
+        print(
+            'RESPONSE: Incorrect config format. '
+            f'{error} Check "config.txt" file',
+            file=sys.stderr
+        )
         sys.exit()
     except Exception as error:
         print(
@@ -154,14 +172,22 @@ def convert_config_values(config: Dict[str, Any]) -> None:
         if config["WIDTH"] < 0 or config["HEIGHT"] < 0:
             raise ValueError("Width and Height must be positive")
         if "," not in config["ENTRY"] or "," not in config["EXIT"]:
-            raise ValueError("'ENTRY' and 'EXIT' must have only two values separated by ','")
+            raise ValueError(
+                "'ENTRY' and 'EXIT' must have only two values separated by ','"
+            )
         x, y = config["ENTRY"].split(",")
         config["ENTRY"] = int(x), int(y)
         w, z = config["EXIT"].split(",")
         config["EXIT"] = int(w), int(z)
-        if not (0 <= config["ENTRY"][0] < config["WIDTH"] and 0 <= config["ENTRY"][1] < config["HEIGHT"]):
+        if not (
+            0 <= config["ENTRY"][0] < config["WIDTH"]
+            and 0 <= config["ENTRY"][1] < config["HEIGHT"]
+        ):
             raise ValueError("ENTRY outside maze")
-        if not (0 <= config["EXIT"][0] < config["WIDTH"] and 0 <= config["EXIT"][1] < config["HEIGHT"]):
+        if not (
+            0 <= config["EXIT"][0] < config["WIDTH"]
+            and 0 <= config["EXIT"][1] < config["HEIGHT"]
+        ):
             raise ValueError("EXIT outside maze")
         if config["ENTRY"] == config["EXIT"]:
             raise ValueError("ENTRY and EXIT must be different")
@@ -172,7 +198,9 @@ def convert_config_values(config: Dict[str, Any]) -> None:
             raise ValueError("'OUTPUT_FILE' must be '.txt' file")
         config["OUTPUT_FILE"] = config["OUTPUT_FILE"].lower()
         if config["CONFIG_FILE"] == config["OUTPUT_FILE"]:
-            raise ValueError(f"OUTPUT_FILE must not be '{config['CONFIG_FILE']}'")
+            raise ValueError(
+                f"OUTPUT_FILE must not be '{config['CONFIG_FILE']}'"
+            )
     except ValueError as error:
         value = error.args[0].split(":")[-1].strip()
         print(f"Invalid value: {value}", file=sys.stderr)
