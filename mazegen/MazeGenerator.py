@@ -180,7 +180,7 @@ class MazeGenerator:
 
         Args:
             path (List[Tuple[int, int]]): List of coordinates
-            representing a path through the maze.
+                representing a path through the maze.
             filename (str): Name of the file to be created or modified.
 
         Raises:
@@ -201,7 +201,7 @@ class MazeGenerator:
             print(f"Error: {error}", file=sys.stderr)
         try:
             with open(filename, "a") as file:
-                file.write(self.add_path_to_file(path, filename))
+                file.write(self.add_path_to_file(path))
         except IOError as error:
             print(
                 f"Error: IOError. Can not write file '{filename}' {error}",
@@ -221,7 +221,7 @@ class MazeGenerator:
 
         Args:
             current (Cell): The current cell from which the wall
-            will be removed.
+                will be removed.
             neighbor (Cell): The neighboring cell adjacent to the current cell.
 
         Raises:
@@ -569,9 +569,32 @@ class MazeGenerator:
 
     def add_path_to_file(
         self,
-        path: list[Tuple[int, int]],
-        filename: str
+        path: list[Tuple[int, int]]
     ) -> str:
+
+        """Converts a path of coordinates into a string of cardinal directions.
+
+            This method takes a list of (x, y) coordinates representing
+            a path and converts each step between consecutive points into
+            a cardinal direction (N, S, E, W). The resulting string represents
+            the sequence of moves along the path.
+
+            Args:
+                path (list[Tuple[int, int]]): A list of coordinate tuples
+                    representing the path. Each tuple contains (x, y)
+                    positions.
+
+            Returns:
+                str: A string starting with a newline character followed by the
+                sequence of cardinal directions corresponding to the path.
+
+            Example:
+                path = [(0, 0), (0, -1), (1, -1)]
+                result = obj.add_path_to_file(path)
+                print(result)
+                "\nNE"
+            """
+
         coord_path = "\n"
         for coord1, coord2 in zip(path[:-1], path[1:]):
             x_1, y_1 = coord1
@@ -582,6 +605,27 @@ class MazeGenerator:
         return coord_path
 
     def get_cardinal(self, coord: Tuple[int, int]) -> str:
+
+        """Returns the cardinal direction corresponding to a coordinate delta.
+
+        This method maps a movement represented as a tuple (dx, dy) to its
+        corresponding cardinal direction:
+        - (0, -1) -> "N"
+        - (0, 1)  -> "S"
+        - (1, 0)  -> "E"
+        - (-1, 0) -> "W"
+
+        Args:
+            coord (Tuple[int, int]): A tuple representing the movement delta
+                between two coordinates (dx, dy).
+
+        Returns:
+            str: A single-character string representing the cardinal direction
+            ("N", "S", "E", "W"). Returns an empty string if the input does not
+            match any valid cardinal direction.
+
+        """
+
         if coord == (0, -1):
             return "N"
         if coord == (0, 1):
@@ -594,6 +638,34 @@ class MazeGenerator:
             return ""
 
     def set_cell_arrow_direction(self, path: list[Tuple[int, int]]) -> None:
+
+        """Assigns cardinal directions to grid cells based on a given path.
+
+        This method iterates through a path of coordinates and determines the
+        direction of movement between consecutive steps. For each intermediate
+        cell in the path (excluding the first and last positions), it assigns
+        a cardinal direction ("N", "S", "E", "W") to the corresponding grid
+        cell based on the direction of the next step.
+
+        Args:
+            path (list[Tuple[int, int]]): A list of coordinate tuples
+                representing the path. Each tuple contains (x, y) positions.
+
+        Returns:
+            None
+
+        Notes:
+            - The first and last coordinates in the path are not modified.
+            - It assumes that `self.grid[y][x]` has an attribute `cardinal`
+            where the direction will be stored.
+
+        Example:
+            path = [(0, 0), (0, 1), (1, 1), (1, 2)]
+            obj.set_cell_arrow_direction(path)
+            # The cells at (0,1) and (1,1) will have their cardinal directions
+            set.
+        """
+
         for coord1, coord2 in zip(path[1:-1], path[2:]):
             x_1, y_1 = coord1
             x_2, y_2 = coord2
@@ -602,6 +674,42 @@ class MazeGenerator:
             self.grid[y_1][x_1].cardinal = self.get_cardinal((dx, dy))
 
     def select_arrow(self, cell: Cell, stack: List[Tuple[int, int]]) -> str:
+
+        """Selects a Unicode arrow character representing the path direction.
+
+        This method is used for VISUALIZATION purposes and determines the
+        appropriate arrow symbol for a given cell based on its position
+        within a path (`stack`) and the direction of movement before
+        and after the cell. It compares the previous and next coordinates
+        to compute the overall direction and combines this with the cell's
+        cardinal direction to select a specific Unicode arrow.
+
+        Args:
+            cell (Cell): The current cell for which the arrow symbol is
+                selected. It must have `x`, `y`, and `cardinal` attributes.
+            stack (List[Tuple[int, int]]): A list of coordinate tuples
+                representing the full path. Each tuple contains (x, y)
+                positions.
+
+        Returns:
+            str: A Unicode character representing the direction of the path at
+            the given cell. Returns "*" if no matching direction is found.
+
+        Raises:
+            ValueError: If the cell's coordinates are not found in the stack.
+
+        Notes:
+            - The method assumes that the cell exists within the stack.
+            - It uses both the previous and next positions in the path to
+            determine turns and straight movements.
+            - Unicode arrows are used to visually represent direction changes.
+
+        Example:
+            arrow = obj.select_arrow(cell, path_stack)
+            print(arrow)
+            '⮡'
+        """
+
         current: Tuple[int, int] = (cell.x, cell.y)
         prev_position = stack.index(current) - 1
         next_position = stack.index(current) + 1
