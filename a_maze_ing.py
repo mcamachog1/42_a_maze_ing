@@ -89,9 +89,13 @@ def main() -> None:
                     print_maze_ascii(maze, path)
                 first = False
             n_options = [1, 2, 3, 4]
-            print("Interface with menu options:")
+            print("\n=== A-Maze-ing ===")
+            print("1. Re-generate a new maze")
+            print("2. Show/Hide path from entry to exit")
+            print("3. Change maze colors")
+            print("4. Quit")
             options = int(input(
-                "1: regen; 2: path; 3: color; 4: quit\n").strip().lower()
+                "Choice? (1-4): ").strip()
             )
             if options not in n_options:
                 raise ValueError
