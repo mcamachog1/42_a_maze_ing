@@ -9,23 +9,34 @@ class FortyTwoColor(Enum):
 
 
 class WallColor(Enum):
-    BG_DEEP_BLACK = '\033[48;2;10;10;10m'
+    # BG_DEEP_BLACK = '\033[48;2;10;10;10m'
     BG_DEEP_RED = '\033[48;2;80;0;0m'
-    BG_DEEP_BLUE = '\033[48;2;0;0;80m'
-    BG_DEEP_PURPLE = '\033[48;2;50;0;50m'
+    # BG_DEEP_BLUE = '\033[48;2;0;0;80m'
+    # BG_DEEP_PURPLE = '\033[48;2;50;0;50m'
+    BG_BRIGHT_BLUE = '\033[104m'
+    BG_GREEN = '\033[42m'
+    BG_BLUE = '\033[44m'
+    BG_MAGENTA = '\033[45m'
+    BG_CYAN = '\033[46m'
 
 
 class BackgroundColor(Enum):
-    BG_SOFT_BEIGE = '\033[48;2;245;245;220m' + '\033[30m'
-    BG_SOFT_CYAN = '\033[106m' + '\033[30m'
+    # Light background colors with dark text for better contrast
+    # BG_SOFT_CYAN = '\033[106m' + '\033[30m' + '\033[38;5;16m'
+    # BG_SOFT_YELLOW = '\033[103m' + '\033[38;5;16m'
+    # BG_SOFT_GRAY = '\033[47m' + '\033[38;5;16m'
+    BG_SOFT_BEIGE = '\033[48;2;245;245;220m' + '\033[38;5;16m'
+
+    # Dark background colors with light text for better contrast
+    BG_BLACK = '\033[40m' + '\033[97m'
 
 
 END_COLOR = '\033[0m'
 BG_COLORS: str = random.choice(list(BackgroundColor)).value
 WALL_COLORS: str = random.choice(list(WallColor)).value
 FORTY_TWO: str = random.choice(list(FortyTwoColor)).value
-ENTRY_COLOR = '\033[30m' + '\033[105m'
-EXIT_COLOR = '\033[30m' + '\033[102m'
+ENTRY_COLOR = '\033[105m'
+EXIT_COLOR = '\033[102m'
 BOLD = '\033[1m'
 WALL_EAST_WEST = "  "
 WALL_SOUTH_NORTH = "   "
@@ -35,7 +46,9 @@ END = " E "
 
 def change_color() -> str:
     global WALL_COLORS
+    global BG_COLORS
     WALL_COLORS = random.choice(list(WallColor)).value
+    BG_COLORS = random.choice(list(BackgroundColor)).value
     return WALL_COLORS
 
 
