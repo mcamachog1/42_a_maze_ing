@@ -106,10 +106,47 @@ class MazeGenerator:
             imperfections.
         """
 
-    IMPERFECTION_ATTEMPTS: int = 3
+    IMPERFECTION_ATTEMPTS: int = 1
+
+    def get_attempts(self) -> int:
+        """
+            Compute and set the number of imperfection attempts for the maze.
+
+            The number of attempts determines how many additional walls will be
+            removed after generating a perfect maze,
+            introducing loops and making
+            the maze "imperfect".
+
+            The value is proportional to the maze area (width * height) using a
+            ratio that controls how open the maze becomes.
+
+            Typical ratio ranges depending on the desired maze type:
+
+                +----------------+-----------+-----------+
+                |      Maze      | Ratio min | Ratio max |
+                +----------------+-----------+-----------+
+                | Almost Perfect |   0.02    |   0.05    |
+                | Balanced       |   0.05    |   0.15    |
+                | Open           |   0.15    |   0.30    |
+                +----------------+-----------+-----------+
+
+            A default ratio of 0.10 (balanced) is used.
+
+            The number of attempts is always
+            at least 1 to ensure that even very
+            small mazes can become imperfect.
+
+            Side Effects:
+                Updates the global variable IMPERFECTION_ATTEMPTS.
+            """
+
+        ratio = 0.10
+        area = self.width * self.height
+        if area * ratio < 1:
+            return 1
+        return int(area * ratio)
 
     def __init__(self, config: Dict[str, Any]):
-
         """Initializes the MazeGenerator with a configuration dictionary.
 
             Args:
@@ -124,7 +161,6 @@ class MazeGenerator:
             Raises:
                 KeyError: If required configuration keys are missing.
             """
-
         self.width = config["WIDTH"]
         self.height = config["HEIGHT"]
         self.entry = config["ENTRY"]
@@ -135,7 +171,10 @@ class MazeGenerator:
             [Cell(x, y) for x in range(self.width)]
             for y in range(self.height)
         ]
-        self.seed = config.get("SEED", None) or None
+        self.seed = config.get("SEED", None)
+        self.algorithm = config.get("ALGORITHM", None)
+        if self.algorithm:
+            self.algorithm.lower()
 
     def format_output_hexa_file(self) -> str:
 
@@ -176,7 +215,7 @@ class MazeGenerator:
             format and appends a path.
 
             The method first writes the formatted maze output to the file, then
-            appends a path representation using the `add_path_to_file` method.
+            appends a path representation using the `get_path_str` method.
 
             Args:
                 path (List[Tuple[int, int]]): List of coordinates
@@ -192,20 +231,12 @@ class MazeGenerator:
         try:
             with open(filename, "w") as file:
                 file.write(self.format_output_hexa_file())
+                file.write(self.get_path_str(path))
+
         except IOError as error:
             print(
                 "Error: IOError. Can not write file "
                 f"'{filename}' {error}",
-                file=sys.stderr
-            )
-        except Exception as error:
-            print(f"Error: {error}", file=sys.stderr)
-        try:
-            with open(filename, "a") as file:
-                file.write(self.add_path_to_file(path))
-        except IOError as error:
-            print(
-                f"Error: IOError. Can not write file '{filename}' {error}",
                 file=sys.stderr
             )
         except Exception as error:
@@ -282,8 +313,7 @@ class MazeGenerator:
 
         if self.seed is not None:
             random.seed(self.seed)
-        stack: List[Tuple[int, int]] = []
-        # If exist a maze, close all walls and reset visited
+            # If exist a maze, close all walls and reset visited
         for line in self.grid:
             for cell in line:
                 cell.north = True
@@ -293,47 +323,95 @@ class MazeGenerator:
                 cell.visited = False
                 cell.best_path = False
                 cell.cardinal = ""
+        if self.algorithm == "dfs" or self.algorithm is None:
+            stack: List[Tuple[int, int]] = []
+            current: Cell = self.grid[start_y][start_x]
+            current.visited = True
 
-        current: Cell = self.grid[start_y][start_x]
-        current.visited = True
+            stack.append((start_x, start_y))
 
-        stack.append((start_x, start_y))
+            while stack:
+                x, y = stack[-1]
+                current = self.grid[y][x]
+                neighbors = []
+                if (
+                    y > 0 and not self.grid[y-1][x].visited
+                    and not self.grid[y-1][x].is_42
+                ):
+                    neighbors.append((x, y-1))
+                if (
+                    y < self.height-1 and not self.grid[y+1][x].visited
+                    and not self.grid[y+1][x].is_42
+                ):
+                    neighbors.append((x, y+1))
+                if (
+                    x > 0 and not self.grid[y][x-1].visited
+                    and not self.grid[y][x-1].is_42
+                ):
+                    neighbors.append((x-1, y))
+                if (
+                    x < self.width-1 and not self.grid[y][x+1].visited
+                    and not self.grid[y][x+1].is_42
+                ):
+                    neighbors.append((x+1, y))
 
-        while stack:
-            x, y = stack[-1]
-            current = self.grid[y][x]
-            neighbors = []
-            if (
-                y > 0 and not self.grid[y-1][x].visited
-                and not self.grid[y-1][x].is_42
-            ):
-                neighbors.append((x, y-1))
-            if (
-                y < self.height-1 and not self.grid[y+1][x].visited
-                and not self.grid[y+1][x].is_42
-            ):
-                neighbors.append((x, y+1))
-            if (
-                x > 0 and not self.grid[y][x-1].visited
-                and not self.grid[y][x-1].is_42
-            ):
-                neighbors.append((x-1, y))
-            if (
-                x < self.width-1 and not self.grid[y][x+1].visited
-                and not self.grid[y][x+1].is_42
-            ):
-                neighbors.append((x+1, y))
+                if neighbors:
+                    nx, ny = random.choice(neighbors)
+                    neighbor = self.grid[ny][nx]
+                    MazeGenerator.remove_wall(current, neighbor)
+                    neighbor.visited = True
+                    stack.append((nx, ny))
+                else:
+                    stack.pop()
+        if self.algorithm == "prim":
+            start = self.grid[start_y][start_x]
+            start.visited = True
+            frontier: set[Tuple[int, int]] = set()
+            def add_frontier(x: int, y: int) -> None:
+                if (
+                    0 <= x < self.width and
+                    0 <= y < self.height and
+                    not self.grid[y][x].visited and
+                    not self.grid[y][x].is_42
+                ):
+                    frontier.add((x, y))
+            add_frontier(start_x, start_y - 1)
+            add_frontier(start_x, start_y + 1)
+            add_frontier(start_x - 1, start_y)
+            add_frontier(start_x + 1, start_y)
+            while frontier:
+                x, y = random.choice(list(frontier))
+                frontier.remove((x, y))
+                cell = self.grid[y][x]
+                visited_neighbors = []
+                for nx, ny in [
+                    (x, y-1),
+                    (x, y+1),
+                    (x-1, y),
+                    (x+1, y),
+                ]:
+                    if (
+                        0 <= nx < self.width and
+                        0 <= ny < self.height and
+                        self.grid[ny][nx].visited
+                        and not self.grid[ny][nx].is_42
+                    ):
+                        visited_neighbors.append((nx, ny))
 
-            if neighbors:
-                nx, ny = random.choice(neighbors)
+                if not visited_neighbors:
+                    continue
+
+                nx, ny = random.choice(visited_neighbors)
                 neighbor = self.grid[ny][nx]
-                MazeGenerator.remove_wall(current, neighbor)
-                neighbor.visited = True
-                stack.append((nx, ny))
-            else:
-                stack.pop()
+                self.remove_wall(cell, neighbor)
+                cell.visited = True
+                add_frontier(x, y - 1)
+                add_frontier(x, y + 1)
+                add_frontier(x - 1, y)
+                add_frontier(x + 1, y)
         if not self.perfect:
             self.make_imperfect()
+            self.solve_grid_open_area()
 
     def close_cell_walls(self, cell: Cell) -> None:
 
@@ -421,6 +499,7 @@ class MazeGenerator:
             for cell in line:
                 if cell.is_42:
                     cells_42.append((cell.x, cell.y))
+                cells_42.sort()
         return cells_42
 
     def make_imperfect(
@@ -434,7 +513,7 @@ class MazeGenerator:
             This method modifies a previously generated perfect maze by
             randomly removing walls between adjacent cells
 
-            The process runs a fixed number of attempts
+            The process runs a number of attempts according to the maze size
             (`IMPERFECTION_ATTEMPTS`).
             In each attempt:
                 - A random cell is selected (optionally restricted to a
@@ -456,9 +535,11 @@ class MazeGenerator:
                     repeated attempts
                     (potential infinite loop in degenerate cases).
             """
-
+        max_tries = 50
+        self.IMPERFECTION_ATTEMPTS = self.get_attempts()
         for _ in range(self.IMPERFECTION_ATTEMPTS):
-            while True:
+            tries = 0
+            while tries < max_tries:
                 if path is not None:
                     x, y = random.choice(path)
                 else:
@@ -503,6 +584,8 @@ class MazeGenerator:
                 elif dy == -1 and current.north:
                     self.remove_wall(current, neighbor)
                     break
+                else:
+                    tries += 1
 
     def find_best_path(
                     self,
@@ -573,9 +656,9 @@ class MazeGenerator:
         self.set_cell_arrow_direction(path)
         return path
 
-    def add_path_to_file(
+    def get_path_str(
                 self,
-                path: list[Tuple[int, int]]
+                path: List[Tuple[int, int]]
             ) -> str:
 
         """Converts a path of coordinates into a string of cardinal directions.
@@ -596,7 +679,7 @@ class MazeGenerator:
 
             Example:
                 path = [(0, 0), (0, -1), (1, -1)]
-                result = obj.add_path_to_file(path)
+                result = obj.get_path_str(path)
                 print(result)
                 "\nNE"
             """
@@ -642,7 +725,7 @@ class MazeGenerator:
         else:
             return ""
 
-    def set_cell_arrow_direction(self, path: list[Tuple[int, int]]) -> None:
+    def set_cell_arrow_direction(self, path: List[Tuple[int, int]]) -> None:
 
         """Assigns cardinal directions to grid cells based on a given path.
 
@@ -654,7 +737,7 @@ class MazeGenerator:
             next step.
 
             Args:
-                path (list[Tuple[int, int]]): A list of coordinate tuples
+                path (List[Tuple[int, int]]): A list of coordinate tuples
                     representing the path. Each tuple contains (x, y)
                     positions.
 
@@ -729,7 +812,7 @@ class MazeGenerator:
         nx, ny = next_coord
         dx = nx - px
         dy = ny - py
-        difference: tuple[int, int] = (dx, dy)
+        difference: Tuple[int, int] = (dx, dy)
         if difference == (1, 1):
             if cell.cardinal == "E":
                 return "\u2BA1"
@@ -760,3 +843,32 @@ class MazeGenerator:
             return "\u2B60"
         else:
             return "*"
+
+    def solve_grid_open_area(self) -> None:
+        x: int = 1
+        y: int = 1
+
+        def check_3x3_open_area(x: int, y: int) -> bool:
+            current: Cell = self.grid[y][x]
+            if current.north or current.south or current.east or current.west:
+                return False
+            if self.grid[y-1][x].east or self.grid[y-1][x].west:
+                return False
+            if self.grid[y-1][x-1].south:
+                return False
+            if self.grid[y][x-1].south:
+                return False
+            if self.grid[y+1][x-1].east:
+                return False
+            if self.grid[y+1][x].east:
+                return False
+            if self.grid[y+1][x+1].north:
+                return False
+            if self.grid[y][x+1].north:
+                return False
+            return True
+        for y in range(1, self.height - 1):
+            for x in range(1, self.width - 1):
+                if check_3x3_open_area(x, y):
+                    self.grid[y][x].north = True
+                    self.grid[y-1][x].south = True

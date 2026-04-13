@@ -1,5 +1,0 @@
-
-2) choose better colors (bg and foreground)
-
-5)ReadME
-6)Docstrings in functions and classes

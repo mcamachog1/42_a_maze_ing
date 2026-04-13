@@ -220,7 +220,7 @@ def print_maze_ascii(
             cell = maze.grid[y][x]
             line_n += (
                 WALL_COLORS + WALL_SOUTH_NORTH + END_COLOR if cell.north
-                else in_stack(cell, stack)
+                else BG_COLORS + WALL_SOUTH_NORTH + END_COLOR
             )
             line_n += WALL_COLORS + WALL_EAST_WEST + END_COLOR
             if x == 0:

@@ -2,9 +2,14 @@
 
 from typing import List, Dict, Any, Tuple, Optional
 import sys
-import mazegen
+import shutil
 import os
+import mazegen
 from maze_print import print_maze_ascii, get_color, change_color
+
+
+# Get the max columns available in the current terminal window
+MAX_WIDTH = (shutil.get_terminal_size()[0] - 2) // 5
 
 
 def main() -> None:
@@ -65,21 +70,13 @@ def main() -> None:
             f"position belongs to 42\nMust be different than: {cells_42}",
             file=sys.stderr)
         sys.exit()
-
-    print(config)
     path: List[Tuple[int, int]] = []
     option_2: int = 0
     maze.generate_maze()
     path = maze.find_best_path(config["ENTRY"], config["EXIT"])
     maze.create_output_hexa_file(path, config["OUTPUT_FILE"])
-    os.system("clear")
     flag = 0
     first = True
-    if config["WIDTH"] < 9 or config["HEIGHT"] < 7:
-        print(
-            "“42” pattern is omitted in case Width is "
-            "lower than 9 and Height is lower than 7"
-        )
     while True:
         try:
             if first:
@@ -236,11 +233,11 @@ def is_format_output_file_name(output_file: str) -> bool:
                 dot, violating the expected 'name.txt' format.
 
         Example:
-            >>> is_format_output_file_name("maze.txt")
+                is_format_output_file_name("maze.txt")
             True
-            >>> is_format_output_file_name("data.TXT")
+                is_format_output_file_name("data.TXT")
             True
-            >>> is_format_output_file_name("invalid_file")
+                is_format_output_file_name("invalid_file")
             Traceback (most recent call last):
                 ...
             ValueError: 'OUTPUT_FILE' must be like -> 'name.txt'
@@ -296,6 +293,8 @@ def convert_config_values(config: Dict[str, Any]) -> None:
         w: int
         z: int
         config["WIDTH"] = int(config["WIDTH"])
+        if config["WIDTH"] > MAX_WIDTH:
+            raise ValueError(f"Width must be lower or equal than {MAX_WIDTH}")
         config["HEIGHT"] = int(config["HEIGHT"])
         if config["WIDTH"] < 0 or config["HEIGHT"] < 0:
             raise ValueError("Width and Height must be positive")
@@ -329,6 +328,9 @@ def convert_config_values(config: Dict[str, Any]) -> None:
             raise ValueError(
                 f"OUTPUT_FILE must not be '{config['CONFIG_FILE']}'"
             )
+        if config.get("ALGORITHM", None):
+            if config["ALGORITHM"].lower() not in ["dfs", "prim"]:
+                raise ValueError("'ALGORITHM' must be 'DFS' or 'PRIM'")
     except ValueError as error:
         value = error.args[0].split(":")[-1].strip()
         print(f"Invalid value: {value}", file=sys.stderr)
